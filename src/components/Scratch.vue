@@ -23,7 +23,7 @@
         <v-subheader class="mt-3 grey--text text--darken-1">PRIVATE MESSAGES</v-subheader>
         <v-list>
           <v-list-tile v-for="privateChannel in privateChannels" :key="privateChannel.id" avatar>
-            <v-list-tile-avatar>
+            <v-list-tile-avatar v-badge="channelUnread(privateChannel)" class="grey--text red--after">
               <img :src="`https://randomuser.me/api/portraits/men/${privateChannel.picture}.jpg`" alt="">
             </v-list-tile-avatar>
             <v-list-tile-title v-text="privateChannel.text" @click="switchChannel(privateChannel)"></v-list-tile-title>
@@ -188,6 +188,8 @@ export default {
     },
     logout () {
       window.kuzzle.logout()
+      this.currentUser = null
+      this.loginDialog = true
     },
     register () {
 
@@ -213,7 +215,7 @@ export default {
 
         } else {
           res.documents.forEach(channel => {
-            this.privateChannels.push({ picture: Math.floor(Math.random() * 100), text: channel.content.label, id: channel.id })
+            this.privateChannels.push({ picture: Math.floor(Math.random() * 100), text: channel.content.label, unread: 0, id: channel.id })
           })
         }
       })
@@ -273,7 +275,11 @@ export default {
                 }
               })
             } else {
-
+              this.privateChannels.forEach((channel, index) => {
+                if (channel.id === message.content.channel) {
+                  this.privateChannels[index].unread = this.privateChannels[index].unread + 1 || 1
+                }
+              })
             }
           }
         }
@@ -329,7 +335,7 @@ export default {
       })
     },
     switchChannel (channel) {
-      this.currentChannel = channel
+      this.currentChannel = Object.assign(channel, { unread: 0 })
       this.retrieveMessages()
     },
     channelUnread (channel) {
