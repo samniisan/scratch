@@ -4,23 +4,8 @@
     <scratch-sidebar
       @logout="logout"
       @channel-switch="switchChannel"
-      @poll-view="showPolls"
-      :drawer="show">
+      @poll-view="showPolls">
     </scratch-sidebar>
-    <v-toolbar class="light-green lighten-1">
-      <v-toolbar-title>
-        <v-toolbar-side-icon @click.native.stop="show = !show"></v-toolbar-side-icon>
-      </v-toolbar-title>
-      <span class="title"><transition name="slide-fade" mode="out-in" appear><v-chip label :key="truc"><v-icon left>forum</v-icon>{{ truc }}</v-chip></transition></span>
-      <v-spacer></v-spacer>
-      <v-text-field
-        label="Search..."
-        single-line
-        append-icon="search"
-        dark
-        hide-details
-      ></v-text-field>
-    </v-toolbar>
     <main>
       <router-view></router-view>
       <v-container fluid>
@@ -140,11 +125,6 @@ export default {
       dialogPassword: ''
     }
   },
-  computed: {
-    truc: function () {
-      return this.$store.state.channels.currentChannel.label
-    }
-  },
   watch: {
     polls: (polls) => {
       if (polls.length > 0) {
@@ -166,7 +146,6 @@ export default {
     }
   },
   mounted () {
-    this.$store.dispatch(SET_CURRENT_CHANNEL, { id: '#kuzzle', label: '#kuzzle' })
     this.subscribeToMessages()
     this.retrieveMessages(this.currentChannel)
     this.subscribeToChannels()
@@ -333,16 +312,5 @@ export default {
 <style scoped>
 #chat {
   overflow: overlay;
-}
-.slide-fade-enter-active {
-    transition: all .1s ease;
-}
-.slide-fade-leave-active {
-    transition: all .1s cubic-bezier(1.0, 0.5, 0.8, 1.0);
-}
-.slide-fade-enter, .slide-fade-leave-to
-    /* .slide-fade-leave-active for <2.1.8 */ {
-    transform: translateX(100px);
-    opacity: 0;
 }
 </style>

@@ -1,11 +1,12 @@
 <template>
+    <span>
     <v-navigation-drawer
         class="pb-0"
         persistent
         absolute
         clipped
         enable-resize-watcher
-        v-model="drawer">
+        v-model="show">
         <v-list dense>
             <v-list-tile v-for="channel in $store.state.channels.channels" :key="channel.id" ripple>
                 <v-list-tile-action>
@@ -53,22 +54,40 @@
             </v-list-tile>
         </v-list>
     </v-navigation-drawer>
+    <v-toolbar class="light-green lighten-1">
+        <v-toolbar-title>
+            <v-toolbar-side-icon @click.native.stop="show = !show"></v-toolbar-side-icon>
+        </v-toolbar-title>
+        <span class="title"><transition name="slide-fade" mode="out-in" appear><v-chip label :key="title"><v-icon left>forum</v-icon>{{ title }}</v-chip></transition></span>
+        <v-spacer></v-spacer>
+        <v-text-field
+            label="Search..."
+            single-line
+            append-icon="search"
+            dark
+            hide-details
+        ></v-text-field>
+    </v-toolbar>
+    </span>
 </template>
 
 <script>
-import { SET_CHANNELS, SET_PRIVATE_CHANNELS } from '../vuex/modules/channels/mutation-types'
+import { SET_CURRENT_CHANNEL, SET_CHANNELS, SET_PRIVATE_CHANNELS } from '../vuex/modules/channels/mutation-types'
 
 export default {
   name: 'scratch-sidebar',
   data () {
     return {
-      drawer: true
+      show: true
     }
   },
   computed: {
-    show: () => this.drawer
+    title: function () {
+      return this.$store.state.channels.currentChannel.label
+    }
   },
   mounted () {
+    this.$store.dispatch(SET_CURRENT_CHANNEL, { id: '#kuzzle', label: '#kuzzle' })
     this.initializeChannels()
     this.initializePrivateChannels()
   },
@@ -132,3 +151,17 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.slide-fade-enter-active {
+transition: all .1s ease;
+}
+.slide-fade-leave-active {
+transition: all .1s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+}
+.slide-fade-enter, .slide-fade-leave-to
+/* .slide-fade-leave-active for <2.1.8 */ {
+transform: translateX(100px);
+opacity: 0;
+}
+</style>
