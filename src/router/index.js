@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import Hello from '@/components/Hello'
 import Scratch from '@/components/Scratch'
+import ScratchAccount from '@/components/ScratchAccount'
 
 Vue.use(Router)
 
@@ -9,13 +9,21 @@ export default new Router({
   routes: [
     {
       path: '/',
-      name: 'Hello',
-      component: Hello
+      name: 'Scratch',
+      component: Scratch,
+      meta: {
+        auth: true
+      },
+      children: [
+        {
+          path: '/account',
+          component: ScratchAccount
+        }
+      ]
     },
     {
-      path: '/scratch',
-      name: 'Scratch',
-      component: Scratch
+      path: '/login',
+      name: 'Login'
     }
   ]
 })

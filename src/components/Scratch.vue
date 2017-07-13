@@ -1,59 +1,17 @@
 <template>
   <v-app
-    dark
-    standalone>
-    <v-navigation-drawer
-      class="pb-0"
-      persistent
-      absolute
-      clipped
-      enable-resize-watcher
-      v-model="drawer">
-      <v-list dense>
-        <v-list-tile v-for="channel in channels" :key="channel.id">
-          <v-list-tile-action>
-            <v-icon v-badge="channelUnread(channel)" class="grey--text red--after">{{ channel.icon }}</v-icon>
-          </v-list-tile-action>
-          <v-list-tile-content>
-            <v-list-tile-title @click="switchChannel(channel)">
-              {{ channel.text }}
-            </v-list-tile-title>
-          </v-list-tile-content>
-        </v-list-tile>
-        <v-subheader class="mt-3 grey--text text--darken-1">PRIVATE MESSAGES</v-subheader>
-        <v-list>
-          <v-list-tile v-for="privateChannel in privateChannels" :key="privateChannel.id" avatar>
-            <v-list-tile-avatar v-badge="channelUnread(privateChannel)" class="grey--text red--after">
-              <img :src="`https://randomuser.me/api/portraits/men/${privateChannel.picture}.jpg`" alt="">
-            </v-list-tile-avatar>
-            <v-list-tile-title v-text="privateChannel.text" @click="switchChannel(privateChannel)"></v-list-tile-title>
-          </v-list-tile>
-        </v-list>
-        <v-list-tile class="mt-3">
-          <v-list-tile-action>
-            <v-icon class="grey--text text--darken-1">add_circle_outline</v-icon>
-          </v-list-tile-action>
-          <v-list-tile-title class="grey--text text--darken-1">Start a conversation</v-list-tile-title>
-        </v-list-tile>
-        <v-list-tile>
-          <v-list-tile-action>
-            <v-icon class="grey--text text--darken-1">settings</v-icon>
-          </v-list-tile-action>
-          <v-list-tile-title class="grey--text text--darken-1">Settings</v-list-tile-title>
-        </v-list-tile>
-        <v-list-tile>
-            <v-list-tile-action>
-                <v-icon class="grey--text text--darken-1">exit_to_app</v-icon>
-            </v-list-tile-action>
-            <v-list-tile-title class="grey--text text--darken-1" @click="logout">Logout</v-list-tile-title>
-        </v-list-tile>
-      </v-list>
-    </v-navigation-drawer>
+    dark>
+    <scratch-sidebar
+      @logout="logout"
+      @channel-switch="switchChannel"
+      @poll-view="showPolls"
+      :drawer="show">
+    </scratch-sidebar>
     <v-toolbar class="light-green lighten-1">
       <v-toolbar-title>
-        <v-toolbar-side-icon @click.native.stop="drawer = !drawer"></v-toolbar-side-icon>
-        <v-icon fa fa-fw class="ml-3">youtube</v-icon>
+        <v-toolbar-side-icon @click.native.stop="show = !show"></v-toolbar-side-icon>
       </v-toolbar-title>
+      <span class="title"><transition name="slide-fade" mode="out-in" appear><v-chip label :key="truc"><v-icon left>forum</v-icon>{{ truc }}</v-chip></transition></span>
       <v-spacer></v-spacer>
       <v-text-field
         label="Search..."
@@ -64,71 +22,91 @@
       ></v-text-field>
     </v-toolbar>
     <main>
+      <router-view></router-view>
       <v-container fluid>
-        <v-layout row>
-          <v-dialog v-model="loginDialog" persistent>
-            <v-card>
-              <v-card-title>
-                <span class="headline">Login to Scratch</span>
-              </v-card-title>
-              <v-card-text>
-                <v-text-field label="Email" required v-model="dialogEmail"></v-text-field>
-                <v-text-field label="Password" type="password" required v-model="dialogPassword"></v-text-field>
-                <small>*indicates required field</small>
-              </v-card-text>
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn class="blue--text darken-1" flat @click.native="login">Login</v-btn>
-                <v-btn class="blue--text darken-2" flat @click.native="register = false">Register</v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-          <v-flex sm10 offset-sm1>
+        <v-layout row wrap>
+          <scratch-login-dialog
+            show="loginDialog"
+            @user-switch="setCurrentUser">
+          </scratch-login-dialog>
+          <v-flex sm10 offset-sm1 v-if="messages.length > 0">
             <v-card id="chat" height="680px">
-                <v-list two-line>
-                    <template v-for="message in messages">
-                        <v-subheader v-if="message.header" v-text="message.header"></v-subheader>
-                        <v-divider v-else-if="message.divider" v-bind:inset="message.inset"></v-divider>
-                        <v-list-tile avatar v-else v-bind:key="message.title">
-                            <v-list-tile-avatar>
-                                <img v-bind:src="message.avatar">
-                            </v-list-tile-avatar>
-                            <v-list-tile-content>
-                                <v-list-tile-title v-html="message.title"></v-list-tile-title>
-                                <v-list-tile-sub-title v-html="message.subtitle"></v-list-tile-sub-title>
-                            </v-list-tile-content>
-                        </v-list-tile>
-                    </template>
-                </v-list>
+              <v-list two-line>
+                <template v-for="(message, index) in messages">
+                  <v-subheader v-if="message.header" v-text="message.header"></v-subheader>
+                  <v-list-tile avatar v-else v-bind:key="message.title">
+                    <v-list-tile-avatar>
+                      <img v-bind:src="message.avatar">
+                    </v-list-tile-avatar>
+                    <v-list-tile-content>
+                      <v-list-tile-title v-html="message.title" v-if="!message.same"></v-list-tile-title>
+                      <v-list-tile-sub-title v-html="message.subtitle"></v-list-tile-sub-title>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                  <v-divider v-if="index + 1 < messages.length" inset></v-divider>
+                </template>
+              </v-list>
             </v-card>
           </v-flex>
+          <template v-for="(poll, index) in polls">
+              <v-flex sm10 offset-sm1>
+                  <v-card>
+                      <v-card-media
+                          :src="poll.img"
+                          height="500px"
+                      >
+                          <v-container fill-height fluid>
+                              <v-layout fill-height>
+                                  <v-flex xs6>
+                                      <kbd><span class="headline white--text" v-text="poll.title"></span></kbd>
+                                      <hr>
+                                      <br/>
+                                      <v-flex xs4>
+                                          <template v-for="(choice, choiceIndex) in poll.choices">
+                                              <p class="title">{{ choice.label }}
+                                                <v-progress-linear v-model="test">{{ getChoiceRatio(index, choiceIndex) }}</v-progress-linear>
+                                                  </p>
+                                          </template>
+                                      </v-flex>
+                                  </v-flex>
+                              </v-layout>
+                          </v-container>
+                      </v-card-media>
+                      <v-card-actions class="white">
+                          <v-spacer></v-spacer>
+                          <v-btn flat class="green--text" v-for="(choice, choiceIndex) in poll.choices">{{ choice.label }}</v-btn>
+                      </v-card-actions>
+                  </v-card>
+              </v-flex>
+          </template>
         </v-layout>
       </v-container>
       <v-container fluid style="position: fixed; bottom: 0;">
-          <v-layout row>
+        <v-layout row>
           <v-flex xs12 sm10>
-              <v-card hover>
-                  <v-toolbar class="light-green darken-4" dark dense>
-                      <v-toolbar-title>Compose</v-toolbar-title>
-                      <v-spacer></v-spacer>
-                      <v-icon class="white--text" @click="sendMessage()">send</v-icon>
-                  </v-toolbar>
-                  <v-container fluid class="pa-0">
-                      <v-layout wrap>
-                          <v-flex xs12>
-                              <v-divider></v-divider>
-                              <v-text-field
-                                  v-model="message"
-                                  full-width
-                                  multi-line
-                                  single-line
-                              ></v-text-field>
-                          </v-flex>
-                      </v-layout>
-                  </v-container>
-              </v-card>
+            <v-card hover>
+              <v-toolbar class="light-green darken-4" dark dense>
+                <v-toolbar-title>Compose</v-toolbar-title>
+                <v-spacer></v-spacer>
+                <v-icon class="white--text" @click="sendMessage">send</v-icon>
+              </v-toolbar>
+              <v-container fluid class="pa-0">
+                <v-layout wrap>
+                  <v-flex xs12>
+                    <v-divider></v-divider>
+                    <v-text-field
+                      v-model="message"
+                      full-width
+                      multi-line
+                      single-line
+                      autofocus
+                    ></v-text-field>
+                  </v-flex>
+                </v-layout>
+              </v-container>
+            </v-card>
           </v-flex>
-          </v-layout>
+        </v-layout>
       </v-container>
     </main>
   </v-app>
@@ -136,148 +114,80 @@
 
 <script>
 import Document from 'kuzzle-sdk/src/Document'
+import ScratchSidebar from '@/components/ScratchSidebar'
+import ScratchLoginDialog from '@/components/ScratchLoginDialog'
+import { SET_CURRENT_CHANNEL, ADD_TO_CHANNELS, DELETE_FROM_CHANNELS } from '../vuex/modules/channels/mutation-types'
 
 export default {
   name: 'scratch',
+  components: { ScratchSidebar, ScratchLoginDialog },
   data () {
     return {
-      drawer: true,
-      currentChannel: { id: '#kuzzle', name: '#kuzzle' },
+      show: true,
       message: '',
-      channels: [],
-      privateChannels: [],
-      messages: [
-        { header: 'Today' }
-      ],
+      messages: [],
+      polls: [],
+      test: 50,
       loginDialog: false,
       dialogEmail: '',
-      dialogPassword: '',
-      currentUser: null
+      dialogPassword: ''
+    }
+  },
+  computed: {
+    truc: function () {
+      return this.$store.state.channels.currentChannel.label
     }
   },
   mounted () {
-    this.checkIfLoggedIn()
-    this.initializeChannels()
-    this.initializePrivateChannels()
+    this.$store.dispatch(SET_CURRENT_CHANNEL, { id: '#kuzzle', label: '#kuzzle' })
     this.subscribeToMessages()
     this.retrieveMessages(this.currentChannel)
+    this.subscribeToChannels()
   },
   methods: {
-    checkIfLoggedIn () {
-      window.kuzzle.whoAmI((err, res) => {
-        if (err) {
-          this.loginDialog = true
-        } else {
-          if (res.id === '-1') {
-            this.loginDialog = true
-          } else {
-            this.currentUser = res
-            this.loginDialog = false
-          }
-        }
-      })
-    },
-    login () {
-      window.kuzzle.login('local', { username: this.dialogEmail, password: this.dialogPassword }, '1h', (err, res) => {
-        if (err) {
-
-        } else {
-          this.checkIfLoggedIn()
-        }
-      })
-    },
     logout () {
       window.kuzzle.logout()
-      this.currentUser = null
       this.loginDialog = true
-    },
-    register () {
-
-    },
-    initializeChannels () {
-      this.channels = []
-      window.kuzzle.collection('slack', 'foo').search({ query: { terms: { type: ['public', 'restricted'] } } }, (err, res) => {
-        if (err) {
-
-        } else {
-          res.documents.forEach(channel => {
-            this.channels.push({ icon: channel.content.icon, text: channel.content.label, unread: 0, id: channel.id })
-          })
-        }
-
-        this.subscribeToChannels()
-      })
-    },
-    initializePrivateChannels () {
-      this.privateChannels = []
-      window.kuzzle.collection('slack', 'foo').search({ query: { term: { type: 'private' } } }, (err, res) => {
-        if (err) {
-
-        } else {
-          res.documents.forEach(channel => {
-            this.privateChannels.push({ picture: Math.floor(Math.random() * 100), text: channel.content.label, unread: 0, id: channel.id })
-          })
-        }
-      })
     },
     subscribeToChannels () {
       window.kuzzle.collection('slack', 'foo').subscribe({}, (err, res) => {
         if (err) {
 
         } else {
-          switch (res.action) {
-            case 'create':
-              if (res.document.content.type === 'private') {
-                this.privateChannels.push({ icon: res.document.content.icon, text: res.document.content.label, id: res.document.id })
-              } else {
-                this.channels.push({ icon: res.document.content.icon, text: res.document.content.label, id: res.document.id })
-              }
-              break
-            case 'delete':
-              console.log(res)
-              this.channels.forEach((channel, index) => {
-                if (channel.id === res.document.id) {
-                  this.channels.splice(index, 1)
-                }
-              })
-              this.privateChannels.forEach((channel, index) => {
-                if (channel.id === res.document.id) {
-                  this.privateChannels.splice(index, 1)
-                }
-              })
-              break
-            default:
-              break
+          if (res.action === 'create') {
+            this.$store.dispatch(ADD_TO_CHANNELS, res.document)
+          }
+          if (res.action === 'delete') {
+            this.$store.dispatch(DELETE_FROM_CHANNELS, res.document)
           }
         }
       })
     },
     subscribeToMessages () {
       window.kuzzle.collection('slack-messages', 'foo').subscribe({}, { subscribeToSelf: false }, (err, res) => {
-        console.log(res)
         let message = res.document
 
         if (err) {
 
         } else {
-          if (message.content.channel === this.currentChannel.id) {
-            this.messages.push({divider: true, inset: true})
+          if (message.content.channel === this.$store.state.channels.currentChannel.id) {
             this.messages.push({
               avatar: 'https://randomuser.me/api/portraits/men/' + Math.floor(Math.random() * 100) + '.jpg',
-              title: message.content.user.name,
+              title: message.content.user.nickname,
               subtitle: message.content.content
             })
+            this.scrollToBottom()
           } else {
             if (message.content.channel.substring(0, 1) === '#') {
-              this.channels.forEach((channel, index) => {
+              this.$store.state.channels.channels.forEach((channel) => {
                 if (channel.id === message.content.channel) {
-                  this.channels[index].unread = this.channels[index].unread + 1 || 1
+                  this.$store.dispatch('INCREMENT_UNREAD', channel)
                 }
               })
             } else {
-              this.privateChannels.forEach((channel, index) => {
+              this.$store.state.channels.privateChannels.forEach((channel) => {
                 if (channel.id === message.content.channel) {
-                  this.privateChannels[index].unread = this.privateChannels[index].unread + 1 || 1
+                  this.$store.dispatch('INCREMENT_UNREAD', channel)
                 }
               })
             }
@@ -287,20 +197,18 @@ export default {
     },
     retrieveMessages () {
       this.messages = []
-      window.kuzzle.collection('slack-messages', 'foo').search({ query: { term: { channel: this.currentChannel.id.replace('#', '') } }, sort: [{ timestamp: 'asc' }] }, { size: 100 }, (err, res) => {
+
+      window.kuzzle.collection('slack-messages', 'foo').search({ query: { term: { channel: this.$store.state.channels.currentChannel.id.replace('#', '') } }, sort: [{ timestamp: 'asc' }] }, { size: 100 }, (err, res) => {
         if (err) {
 
         } else {
           if (res.total > 0) {
-            res.documents.forEach((message, index) => {
+            res.documents.forEach(message => {
               this.messages.push({
                 avatar: 'https://randomuser.me/api/portraits/men/' + Math.floor(Math.random() * 100) + '.jpg',
-                title: message.content.user.name,
+                title: message.content.user.nickname,
                 subtitle: message.content.content
               })
-              if (index < res.documents.length - 1) {
-                this.messages.push({ divider: true, inset: true })
-              }
             })
           } else {
             this.messages.push({ header: 'This discussion is empty, try saying something nice!' })
@@ -312,22 +220,17 @@ export default {
     },
     sendMessage () {
       let message = new Document(window.kuzzle.collection('slack-messages', 'foo'), {
-        user: {
-          name: this.currentUser.content.nickname,
-          avatar: this.currentUser.content.avatar,
-          id: this.currentUser.id
-        },
+        user: this.$store.state.auth.user,
         content: this.message,
         timestamp: Date.now(),
-        channel: this.currentChannel.id
+        channel: this.$store.state.channels.currentChannel.id
       })
 
       window.kuzzle.collection('slack-messages', 'foo').createDocument(message, (err, res) => {
         if (err) {
 
         } else {
-          this.messages.push({ divider: true, inset: true })
-          this.messages.push({ avatar: 'https://randomuser.me/api/portraits/men/' + Math.floor(Math.random() * 100) + '.jpg', title: message.content.user.name, subtitle: message.content.content })
+          this.messages.push({ avatar: 'https://randomuser.me/api/portraits/men/' + Math.floor(Math.random() * 100) + '.jpg', title: message.content.user.nickname, subtitle: message.content.content })
         }
 
         this.message = ''
@@ -335,17 +238,61 @@ export default {
       })
     },
     switchChannel (channel) {
-      this.currentChannel = Object.assign(channel, { unread: 0 })
-      this.retrieveMessages()
+      if (this.$store.state.channels.currentChannel.id !== channel.id) {
+        this.$store.dispatch(SET_CURRENT_CHANNEL, channel)
+        this.retrieveMessages()
+      }
     },
-    channelUnread (channel) {
-      return channel.unread > 0 ? { value: channel.unread, visible: true } : { visible: false }
+    setCurrentUser (user) {
+      this.$store.state.auth.user = user
+      this.loginDialog = false
     },
     scrollToBottom () {
       let elem = this.$el.querySelector('#chat')
       setTimeout(() => {
         elem.scrollTop = elem.scrollHeight
-      }, 10)
+      }, 0)
+    },
+    showPolls () {
+      this.messages = []
+      this.$store.dispatch(SET_CURRENT_CHANNEL, { id: '#polls', label: 'Polls' })
+      this.initPolls()
+    },
+    initPolls () {
+      window.kuzzle.collection('slack-polls', 'foo').search({}, (err, res) => {
+        if (err) {
+
+        } else {
+          this.polls = []
+
+          res.documents.forEach(poll => {
+            this.polls.push({ id: poll.id, img: poll.content.img, title: poll.content.question, choices: poll.content.choices })
+          })
+
+          window.kuzzle.collection('slack-polls', 'foo').subscribe({}, (err, res) => {
+            if (err) {
+
+            } else {
+              this.polls.forEach(poll => {
+                if (poll.id === res.document.id) {
+                  this.polls.push({ id: res.document.id, img: res.document.content.img, title: res.document.content.question, choices: res.document.content.choices })
+                }
+              })
+            }
+          })
+        }
+      })
+    },
+    getChoiceRatio (pollIndex, choiceIndex) {
+      let totalVotes = 0
+
+      for (let key in this.polls[pollIndex].choices) {
+        if (this.polls[pollIndex].choices.hasOwnProperty(key)) {
+          totalVotes += this.polls[pollIndex].choices[key].voters
+        }
+      }
+
+      return (this.polls[pollIndex].choices[choiceIndex].voters * totalVotes) / 100
     }
   }
 }
@@ -354,5 +301,16 @@ export default {
 <style scoped>
 #chat {
   overflow: overlay;
+}
+.slide-fade-enter-active {
+    transition: all .1s ease;
+}
+.slide-fade-leave-active {
+    transition: all .1s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+}
+.slide-fade-enter, .slide-fade-leave-to
+    /* .slide-fade-leave-active for <2.1.8 */ {
+    transform: translateX(100px);
+    opacity: 0;
 }
 </style>
