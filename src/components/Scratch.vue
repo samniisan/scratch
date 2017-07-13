@@ -49,7 +49,7 @@
             </v-card>
           </v-flex>
           <template v-for="(poll, index) in polls">
-              <v-flex sm10 offset-sm1>
+              <v-flex sm8 offset-sm2>
                   <v-card>
                       <v-card-media
                           :src="poll.img"
@@ -63,9 +63,13 @@
                                       <br/>
                                       <v-flex xs4>
                                           <template v-for="(choice, choiceIndex) in poll.choices">
-                                              <p class="title">{{ choice.label }}
-                                                <v-progress-linear v-model="test">{{ getChoiceRatio(index, choiceIndex) }}</v-progress-linear>
-                                                  </p>
+                                              <p>
+                                                  <v-chip class="green white--text">
+                                                      <v-avatar class="green darken-4"><b>{{ choice.voters }}</b></v-avatar>
+                                                      {{ choice.label }}
+                                                  </v-chip>
+                                                  <v-progress-linear error v-model="choice.rate"></v-progress-linear>
+                                              </p>
                                           </template>
                                       </v-flex>
                                   </v-flex>
@@ -74,7 +78,11 @@
                       </v-card-media>
                       <v-card-actions class="white">
                           <v-spacer></v-spacer>
-                          <v-btn flat class="green--text" v-for="(choice, choiceIndex) in poll.choices">{{ choice.label }}</v-btn>
+                          <template v-for="(choice, choiceIndex) in poll.choices">
+                              <span @click="sendVote(poll, choiceIndex, choice)">
+                                  <v-btn round ripple class="green">{{ choice.label }}</v-btn>
+                              </span>
+                          </template>
                       </v-card-actions>
                   </v-card>
               </v-flex>
@@ -127,7 +135,6 @@ export default {
       message: '',
       messages: [],
       polls: [],
-      test: 50,
       loginDialog: false,
       dialogEmail: '',
       dialogPassword: ''
@@ -136,6 +143,26 @@ export default {
   computed: {
     truc: function () {
       return this.$store.state.channels.currentChannel.label
+    }
+  },
+  watch: {
+    polls: (polls) => {
+      if (polls.length > 0) {
+        polls.forEach(poll => {
+          let totalVotes = 0
+
+          for (let key in poll.choices) {
+            if (poll.choices.hasOwnProperty(key)) {
+              totalVotes += poll.choices[key].voters
+            }
+          }
+          for (let key in poll.choices) {
+            if (poll.choices.hasOwnProperty(key)) {
+              poll.choices[key].rate = poll.choices[key].voters / totalVotes * 100
+            }
+          }
+        })
+      }
     }
   },
   mounted () {
@@ -238,6 +265,7 @@ export default {
       })
     },
     switchChannel (channel) {
+      this.polls = []
       if (this.$store.state.channels.currentChannel.id !== channel.id) {
         this.$store.dispatch(SET_CURRENT_CHANNEL, channel)
         this.retrieveMessages()
@@ -273,9 +301,9 @@ export default {
             if (err) {
 
             } else {
-              this.polls.forEach(poll => {
+              this.polls.forEach((poll, index) => {
                 if (poll.id === res.document.id) {
-                  this.polls.push({ id: res.document.id, img: res.document.content.img, title: res.document.content.question, choices: res.document.content.choices })
+                  this.polls.splice(index, 1, { id: res.document.id, img: res.document.content.img, title: res.document.content.question, choices: res.document.content.choices })
                 }
               })
             }
@@ -283,16 +311,20 @@ export default {
         }
       })
     },
-    getChoiceRatio (pollIndex, choiceIndex) {
-      let totalVotes = 0
+    sendVote (poll, choiceIndex, choice) {
+      console.log('SEND')
+      let choices = {}
 
-      for (let key in this.polls[pollIndex].choices) {
-        if (this.polls[pollIndex].choices.hasOwnProperty(key)) {
-          totalVotes += this.polls[pollIndex].choices[key].voters
+      choice.voters = choice.voters + 1
+      choices[choiceIndex] = choice
+
+      window.kuzzle.collection('slack-polls', 'foo').updateDocument(poll.id, { choices: choices }, (err, res) => {
+        if (err) {
+          console.log('ERR: ' + JSON.stringify(err))
+        } else {
+          console.log('RES: ' + JSON.stringify(res))
         }
-      }
-
-      return (this.polls[pollIndex].choices[choiceIndex].voters * totalVotes) / 100
+      })
     }
   }
 }
