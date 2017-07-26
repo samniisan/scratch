@@ -9,3 +9,13 @@ export const channels = state => {
 export const privateChannels = state => {
   return state.privateChannels
 }
+
+export const getChannelById = (state, id) => {
+  if (typeof id === 'string') {
+    if (id.startsWith('#')) {
+      return state.channels.filter(channel => channel.id === id)[0]
+    }
+
+    return state.privateChannels.filter(channel => channel.id === id)[0]
+  }
+}

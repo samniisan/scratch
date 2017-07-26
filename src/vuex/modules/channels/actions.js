@@ -15,6 +15,8 @@ export default {
       channel.label = channelData.content.label
       channel.icon = channelData.content.icon
       channel.type = channelData.content.type
+      channel.speaking = []
+      channel.typingMessage = ''
 
       channels.push(channel)
     })
@@ -31,6 +33,8 @@ export default {
       channel.label = channelData.content.label
       channel.icon = 'https://randomuser.me/api/portraits/men/' + Math.floor(Math.random() * 100) + '.jpg'
       channel.type = channelData.content.type
+      channel.speaking = []
+      channel.typingMessage = ''
 
       privateChannels.push(channel)
     })
@@ -44,6 +48,8 @@ export default {
     channel.label = data.content.label
     channel.icon = data.content.icon
     channel.type = data.content.type
+    channel.speaking = []
+    channel.typingMessage = ''
 
     commit(types.ADD_TO_CHANNELS, channel)
   },
@@ -52,5 +58,8 @@ export default {
   },
   [types.INCREMENT_UNREAD] ({commit}, channel) {
     commit(types.INCREMENT_UNREAD, channel)
+  },
+  [types.SET_SPEAKING] ({commit}, data) {
+    commit(types.SET_SPEAKING, data)
   }
 }

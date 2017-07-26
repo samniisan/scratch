@@ -4,6 +4,7 @@ export default () => {
     label: undefined,
     icon: undefined,
     type: undefined,
-    unread: 0
+    unread: 0,
+    speaking: []
   }
 }

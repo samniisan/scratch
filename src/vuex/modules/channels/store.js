@@ -4,7 +4,7 @@ import {
   SET_PRIVATE_CHANNELS,
   ADD_TO_CHANNELS,
   DELETE_FROM_CHANNELS,
-  INCREMENT_UNREAD
+  INCREMENT_UNREAD, SET_SPEAKING
 } from './mutation-types'
 import ScratchChannel from '../../../models/ScratchChannel'
 import actions from './actions'
@@ -19,6 +19,12 @@ const state = {
 export const mutations = {
   [SET_CURRENT_CHANNEL] (state, channel) {
     channel.unread = 0
+    if (typeof getters.getChannelById(state, channel.id) !== 'undefined') {
+      channel.speaking = getters.getChannelById(state, channel.id).speaking
+    } else {
+      channel.speaking = []
+    }
+    channel.typingMessage = ''
     state.currentChannel = channel
   },
   [SET_CHANNELS] (state, channels) {
@@ -48,6 +54,31 @@ export const mutations = {
   },
   [INCREMENT_UNREAD] (state, channel) {
     channel.unread = channel.unread + 1 || 1
+  },
+  [SET_SPEAKING] (state, data) {
+    let channel = getters.getChannelById(state, data.channel)
+    let speaking = []
+
+    if (channel.speaking.filter(user => user.user === data.user).length === 0) {
+      speaking = {user: data.user, typing: data.typing}
+      channel.speaking.push(speaking)
+      if (data.channel === state.currentChannel.id) {
+        state.currentChannel.speaking.push(speaking)
+      }
+    } else {
+      channel.speaking.forEach(user => {
+        if (user.user === data.user) {
+          user.typing = data.typing
+        }
+      })
+      if (data.channel === state.currentChannel.id) {
+        state.currentChannel.speaking.forEach(user => {
+          if (user.user === data.user) {
+            user.typing = data.typing
+          }
+        })
+      }
+    }
   }
 }
 
