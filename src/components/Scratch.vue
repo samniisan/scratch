@@ -85,7 +85,10 @@
                         <v-flex sm8 offset-sm2>
                             <v-card>
                                 <v-toolbar class="light-green darken-4" dark dense>
-                                    <v-toolbar-title>Compose</v-toolbar-title>
+                                    <v-toolbar-title row>
+                                        Compose
+                                        <scratch-typing></scratch-typing>
+                                    </v-toolbar-title>
                                     <v-spacer></v-spacer>
                                     <v-icon class="white--text" @click="sendMessage">send</v-icon>
                                 </v-toolbar>
@@ -101,7 +104,6 @@
                                                 autofocus
                                                 @input="typing">
                                             </v-text-field>
-                                            <scratch-typing></scratch-typing>
                                         </v-flex>
                                     </v-layout>
                                 </v-container>
@@ -167,9 +169,7 @@
       },
       subscribeToChannels () {
         window.kuzzle.collection('slack', 'foo').subscribe({}, (err, res) => {
-          if (err) {
-
-          } else {
+          if (!err) {
             if (res.action === 'create') {
               this.$store.dispatch(ADD_TO_CHANNELS, res.document)
             }
@@ -183,9 +183,7 @@
         window.kuzzle.collection('slack-messages', 'foo').subscribe({}, { subscribeToSelf: false }, (err, res) => {
           let message = res.document
 
-          if (err) {
-
-          } else {
+          if (!err) {
             if (message.content.event === 'typing') {
               this.$store.dispatch(SET_SPEAKING, message.content)
 
@@ -194,20 +192,21 @@
             if (message.content.channel === this.$store.state.channels.currentChannel.id) {
               this.pushMessage(message)
               this.scrollToBottom()
+
+              return
+            }
+            if (message.content.channel.substring(0, 1) === '#') {
+              this.$store.state.channels.channels.forEach(channel => {
+                if (channel.id === message.content.channel) {
+                  this.$store.dispatch('INCREMENT_UNREAD', channel)
+                }
+              })
             } else {
-              if (message.content.channel.substring(0, 1) === '#') {
-                this.$store.state.channels.channels.forEach((channel) => {
-                  if (channel.id === message.content.channel) {
-                    this.$store.dispatch('INCREMENT_UNREAD', channel)
-                  }
-                })
-              } else {
-                this.$store.state.channels.privateChannels.forEach((channel) => {
-                  if (channel.id === message.content.channel) {
-                    this.$store.dispatch('INCREMENT_UNREAD', channel)
-                  }
-                })
-              }
+              this.$store.state.channels.privateChannels.forEach(channel => {
+                if (channel.id === message.content.channel) {
+                  this.$store.dispatch('INCREMENT_UNREAD', channel)
+                }
+              })
             }
           }
         })
@@ -216,9 +215,7 @@
         this.messages = []
 
         window.kuzzle.collection('slack-messages', 'foo').search({ query: { term: { channel: this.$store.state.channels.currentChannel.id.replace('#', '') } }, sort: [{ timestamp: 'asc' }] }, { size: 100 }, (err, res) => {
-          if (err) {
-
-          } else {
+          if (!err) {
             if (res.total > 0) {
               res.documents.forEach(message => this.pushMessage(message))
             } else {
@@ -238,9 +235,7 @@
         })
 
         window.kuzzle.collection('slack-messages', 'foo').createDocument(message, (err, res) => {
-          if (err) {
-
-          } else {
+          if (!err) {
             this.pushMessage(message)
           }
 
@@ -273,9 +268,7 @@
       },
       initPolls () {
         window.kuzzle.collection('slack-polls', 'foo').search({}, (err, res) => {
-          if (err) {
-
-          } else {
+          if (!err) {
             this.polls = []
 
             res.documents.forEach(poll => {
@@ -283,9 +276,7 @@
             })
 
             window.kuzzle.collection('slack-polls', 'foo').subscribe({}, (err, res) => {
-              if (err) {
-
-              } else {
+              if (!err) {
                 this.polls.forEach((poll, index) => {
                   if (poll.id === res.document.id) {
                     this.polls.splice(index, 1, { id: res.document.id, img: res.document.content.img, title: res.document.content.question, choices: res.document.content.choices })
@@ -307,14 +298,9 @@
       sendVote (poll, choiceIndex, choice) {
         let choices = {}
 
-        choice.voters = choice.voters + 1
-        choices[choiceIndex] = choice
+        choices[choiceIndex] = Object.assign(choice, { voters: choice.voters + 1 })
 
-        window.kuzzle.collection('slack-polls', 'foo').updateDocument(poll.id, { choices: choices }, (err, res) => {
-          if (err) {
-            console.log('ERR: ' + JSON.stringify(err))
-          }
-        })
+        window.kuzzle.collection('slack-polls', 'foo').updateDocument(poll.id, { choices: choices })
       },
       typing () {
         if (this.message.length <= 1) {
@@ -331,15 +317,15 @@
 </script>
 
 <style scoped>
-.slide-fade-enter-active {
+  .slide-fade-enter-active {
     transition: all .2s ease;
-}
-.slide-fade-leave-active {
+  }
+  .slide-fade-leave-active {
     transition: all .2s cubic-bezier(1.0, 0.5, 0.8, 1.0);
-}
-.slide-fade-enter, .slide-fade-leave-to
+  }
+  .slide-fade-enter, .slide-fade-leave-to
     /* .slide-fade-leave-active for <2.1.8 */ {
     transform: translateY(100px);
     opacity: 0;
-}
+  }
 </style>

@@ -51,117 +51,117 @@
 </template>
 
 <script>
-import md5 from 'md5'
-import { SET_CURRENT_USER } from '../vuex/modules/auth/mutation-types'
+  import md5 from 'md5'
+  import { SET_CURRENT_USER } from '../vuex/modules/auth/mutation-types'
 
-export default {
-  name: 'scratch-login-dialog',
-  data () {
-    return {
-      show: false,
-      loading: false,
-      loginEmail: '',
-      loginPassword: '',
-      registerEmail: '',
-      registerNickname: '',
-      registerPassword: '',
-      registerPasswordConfirmation: '',
-      currentTab: 'tab-login',
-      errors: []
-    }
-  },
-  mounted () {
-    this.checkIfLoggedIn()
-  },
-  methods: {
-    checkIfLoggedIn () {
-      setTimeout(() => {
-        let token = localStorage.getItem('jwtToken')
+  export default {
+    name: 'scratch-login-dialog',
+    data () {
+      return {
+        show: false,
+        loading: false,
+        loginEmail: '',
+        loginPassword: '',
+        registerEmail: '',
+        registerNickname: '',
+        registerPassword: '',
+        registerPasswordConfirmation: '',
+        currentTab: 'tab-login',
+        errors: []
+      }
+    },
+    mounted () {
+      this.checkIfLoggedIn()
+    },
+    methods: {
+      checkIfLoggedIn () {
+        setTimeout(() => {
+          let token = localStorage.getItem('jwtToken')
 
-        if (token !== null) {
-          window.kuzzle.checkToken(token, (err, res) => {
-            this.show = !!(err || !res.valid)
-            if (!this.show) {
-              this.$store.commit(SET_CURRENT_USER, JSON.parse(localStorage.getItem('user')))
+          if (token !== null) {
+            window.kuzzle.checkToken(token, (err, res) => {
+              this.show = !!(err || !res.valid)
+              if (!this.show) {
+                this.$store.commit(SET_CURRENT_USER, JSON.parse(localStorage.getItem('user')))
+              }
+            })
+          } else {
+            this.show = true
+          }
+        }, 100)
+      },
+      login () {
+        this.loading = true
+        this.$store.dispatch(SET_CURRENT_USER, { username: this.loginEmail, password: this.loginPassword })
+          .then((err, res) => {
+            this.loading = false
+            if (err) {
+              this.errors.push(err.message)
+            } else {
+              this.show = false
             }
           })
-        } else {
-          this.show = true
-        }
-      }, 100)
-    },
-    login () {
-      this.loading = true
-      this.$store.dispatch(SET_CURRENT_USER, { username: this.loginEmail, password: this.loginPassword })
-        .then((err, res) => {
-          this.loading = false
-          if (err) {
-            this.errors.push(err.message)
-          } else {
-            this.show = false
-          }
-        })
-    },
-    register () {
-      this.errors = []
+      },
+      register () {
+        this.errors = []
 
-      if (this.isRegisterFormValid()) {
-        this.loading = true
+        if (this.isRegisterFormValid()) {
+          this.loading = true
 
-        let userDocument = {
-          content: {
-            profileIds: ['default'],
-            nickname: this.registerNickname,
-            avatar: 'http://www.gravatar.com/avatar/' + md5(this.registerEmail) + '?d=identicon'
-          },
-          credentials: {
-            local: {
-              username: this.registerEmail,
-              password: this.registerPassword
+          let userDocument = {
+            content: {
+              profileIds: ['default'],
+              nickname: this.registerNickname,
+              avatar: 'http://www.gravatar.com/avatar/' + md5(this.registerEmail) + '?d=identicon'
+            },
+            credentials: {
+              local: {
+                username: this.registerEmail,
+                password: this.registerPassword
+              }
             }
           }
+
+          window.kuzzle.security.createUser(this.registerEmail, userDocument, (err, user) => {
+            if (err) {
+              this.loading = false
+              this.errors.push(err.message)
+            } else {
+              this.$store.dispatch(SET_CURRENT_USER, {username: this.registerEmail, password: this.registerPassword})
+                .then(() => {
+                  this.loading = false
+                  this.show = false
+                })
+            }
+          })
+        }
+      },
+      isRegisterFormValid () {
+        if (this.isEmpty('register')) {
+          this.errors.push('Please fill every fields')
+          return false
+        }
+        if (!this.passwordValid()) {
+          this.errors.push('Invalid password')
+          return false
         }
 
-        window.kuzzle.security.createUser(this.registerEmail, userDocument, (err, user) => {
-          if (err) {
-            this.loading = false
-            this.errors.push(err.message)
-          } else {
-            this.$store.dispatch(SET_CURRENT_USER, {username: this.registerEmail, password: this.registerPassword})
-              .then(() => {
-                this.loading = false
-                this.show = false
-              })
-          }
-        })
-      }
-    },
-    isRegisterFormValid () {
-      if (this.isEmpty('register')) {
-        this.errors.push('Please fill every fields')
-        return false
-      }
-      if (!this.passwordValid()) {
-        this.errors.push('Invalid password')
-        return false
-      }
+        return true
+      },
+      isEmpty (scenario) {
+        if (scenario === 'login') {
+          return this.loginEmail.length === 0 || this.loginPassword.length === 0
+        }
 
-      return true
-    },
-    isEmpty (scenario) {
-      if (scenario === 'login') {
-        return this.loginEmail.length === 0 || this.loginPassword.length === 0
-      }
+        return this.registerEmail.length === 0 || this.registerNickname.length === 0 || this.registerPassword.length === 0 || this.registerPasswordConfirmation.length === 0
+      },
+      passwordValid () {
+        if (this.registerPassword.length < 6 || this.registerPasswordConfirmation.length < 6) {
+          return false
+        }
 
-      return this.registerEmail.length === 0 || this.registerNickname.length === 0 || this.registerPassword.length === 0 || this.registerPasswordConfirmation.length === 0
-    },
-    passwordValid () {
-      if (this.registerPassword.length < 6 || this.registerPasswordConfirmation.length < 6) {
-        return false
+        return this.registerPassword === this.registerPasswordConfirmation
       }
-
-      return this.registerPassword === this.registerPasswordConfirmation
     }
   }
-}
 </script>

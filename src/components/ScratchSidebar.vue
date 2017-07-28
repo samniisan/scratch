@@ -19,7 +19,7 @@
                     <v-list-tile-action>
                         <v-icon class="grey--text text--darken-1">add_circle_outline</v-icon>
                     </v-list-tile-action>
-                    <v-list-tile-title @click="showCreateChannelPopup = true" class="grey--text text--darken-1">Create a channel</v-list-tile-title>
+                    <v-list-tile-title @click="showCreateChannelDialog = true" class="grey--text text--darken-1">Create a channel</v-list-tile-title>
                 </v-list-tile>
                 <v-subheader class="mt-3 grey--text text--darken-1">PRIVATE MESSAGES</v-subheader>
                 <v-list>
@@ -37,7 +37,7 @@
                     <v-list-tile-action>
                         <v-icon class="grey--text text--darken-1">add_circle_outline</v-icon>
                     </v-list-tile-action>
-                    <v-list-tile-title class="grey--text text--darken-1">Start a conversation</v-list-tile-title>
+                    <v-list-tile-title @click="showCreatePrivateChannelDialog = true" class="grey--text text--darken-1">Start a conversation</v-list-tile-title>
                 </v-list-tile>
                 <v-list-tile class="mt-3">
                     <v-list-tile-action>
@@ -73,7 +73,7 @@
                 hide-details
             ></v-text-field>
         </v-toolbar>
-        <v-dialog v-model="showCreateChannelPopup" persistent>
+        <v-dialog v-model="showCreateChannelDialog" persistent>
             <v-card>
                 <v-card-title>
                     <span class="headline">New channel</span>
@@ -107,7 +107,52 @@
                 </v-card-text>
                 <v-card-actions>
                     <v-btn block class="orange--text" type="submit" flat @click.native="createChannel" :loading="loading">Create</v-btn>
-                    <v-btn block class="green--text" flat @click.native="showCreateChannelPopup = false">Cancel</v-btn>
+                    <v-btn block class="green--text" flat @click.native="showCreateChannelDialog = false">Cancel</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+        <v-dialog v-model="showCreatePrivateChannelDialog" persistent width="60%">
+            <v-card>
+                <v-card-title>
+                    <span class="headline">Start a conversation</span>
+                </v-card-title>
+                <v-card-text>
+                    <v-select
+                        v-bind:items="users"
+                        v-model="privateChatUsers"
+                        label="Users"
+                        multiple
+                        hint="Let's talk with..."
+                        chips
+                        item-text="nickname"
+                        item-value="nickname"
+                        autocomplete>
+                        <template slot="selection" scope="data">
+                            <transition name="slide-fade" appear>
+                                <v-chip
+                                    close
+                                    @input="data.parent.selectItem(data.item)"
+                                    @click.native.stop
+                                    class="chip--select-multi green black--text subheading"
+                                    :key="data.item">
+                                    <v-avatar>
+                                        <img :src="data.item.avatar">
+                                    </v-avatar>
+                                    {{ data.item.nickname }}
+                                </v-chip>
+                            </transition>
+                        </template>
+                        <template slot="item" scope="data">
+                            <v-list-tile-avatar>
+                                <img :src="data.item.avatar"/>
+                            </v-list-tile-avatar>
+                            <v-list-tile-content v-text="data.item.nickname"></v-list-tile-content>
+                        </template>
+                    </v-select>
+                </v-card-text>
+                <v-card-actions>
+                    <v-btn block class="orange--text" type="submit" flat @click.native="createChannel" :loading="loading">Let's chat!</v-btn>
+                    <v-btn block class="green--text" flat @click.native="showCreatePrivateChannelDialog = false">Nevermind</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -115,132 +160,104 @@
 </template>
 
 <script>
-import Document from 'kuzzle-sdk/src/Document'
-import { SET_CURRENT_CHANNEL, SET_CHANNELS, SET_PRIVATE_CHANNELS } from '../vuex/modules/channels/mutation-types'
+  import Document from 'kuzzle-sdk/src/Document'
+  import { SET_CURRENT_CHANNEL, SET_CHANNELS, SET_PRIVATE_CHANNELS, ADD_TO_CHANNELS, DELETE_FROM_CHANNELS } from '../vuex/modules/channels/mutation-types'
 
-export default {
-  name: 'scratch-sidebar',
-  data () {
-    return {
-      show: true,
-      showCreateChannelPopup: false,
-      loading: false,
-      a1: null,
-      channelIcons: [{ icon: 'forum', label: 'Default' }, { icon: 'announcement', label: 'Announcement' }, { icon: 'android', label: 'Android' }, { icon: 'bug_report', label: 'Bug' }, { icon: 'favorite', label: 'Favorite' }, { icon: 'flight_takeoff', label: 'Flight' }, { icon: 'fingerprint', label: 'Fingerprint' }, { icon: 'gif', label: 'Gif' }, { icon: 'group_work', label: 'Group work' }, { icon: 'help', label: 'Help' }, { icon: 'info', label: 'Info' }, { icon: 'home', label: 'Home' }, { icon: 'label', label: 'Label' }, { icon: 'language', label: 'Language' }, { icon: 'lightbulb_outline', label: 'Idea' }, { icon: 'lock', label: 'Lock' }, { icon: 'motorcycle', label: 'Motorcycle' }, { icon: 'record_voice_over', label: 'Voice' }, { icon: 'schedule', label: 'Schedule' }, { icon: 'room', label: 'Map' }, { icon: 'report_problem', label: 'Alert' }, { icon: 'search', label: 'Search' }, { icon: 'shopping_cart', label: 'Shopping' }, { icon: 'theaters', label: 'Movie' }, { icon: 'translate', label: 'Translation' }, { icon: 'trending_up', label: 'Trends' }, { icon: 'work', label: 'Work' }, { icon: 'library_music', label: 'Music' }, { icon: 'play_circle_outline', label: 'Video' }, { icon: 'call', label: 'Phone' }, { icon: 'chat_bubble', label: 'Chat' }, { icon: 'weekend', label: 'Weekend' }, { icon: 'attach_money', label: 'Money' }, { icon: 'insert_emoticon', label: 'Smile' }, { icon: 'videogame_asset', label: 'Video Games' }, { icon: 'tv', label: 'TV' }, { icon: 'directions_run', label: 'Run' }, { icon: 'local_cafe', label: 'Coffee' }, { icon: 'beach_access', label: 'Beach' }, { icon: 'cake', label: 'Birthday' }, { icon: 'school', label: 'School' }],
-      newChannelTitle: '',
-      newChannelRestricted: false,
-      newChannelIcon: 'default'
-    }
-  },
-  computed: {
-    title: function () {
-      return this.$store.state.channels.currentChannel.label
-    }
-  },
-  mounted () {
-    this.$store.dispatch(SET_CURRENT_CHANNEL, { id: '#kuzzle', label: '#kuzzle' })
-    this.initializeChannels()
-    this.initializePrivateChannels()
-  },
-  methods: {
-    initializeChannels () {
-      this.channels = []
-      window.kuzzle.collection('slack', 'foo').search({ query: { terms: { type: ['public', 'restricted'] } } }, (err, res) => {
-        if (err) {
-
-        } else {
-          this.$store.dispatch(SET_CHANNELS, res.documents)
-        }
-
-        this.subscribeToChannels()
-      })
+  export default {
+    name: 'scratch-sidebar',
+    data () {
+      return {
+        show: true,
+        showCreateChannelDialog: false,
+        loading: false,
+        channelIcons: [{ icon: 'forum', label: 'Default' }, { icon: 'announcement', label: 'Announcement' }, { icon: 'android', label: 'Android' }, { icon: 'bug_report', label: 'Bug' }, { icon: 'favorite', label: 'Favorite' }, { icon: 'flight_takeoff', label: 'Flight' }, { icon: 'fingerprint', label: 'Fingerprint' }, { icon: 'gif', label: 'Gif' }, { icon: 'group_work', label: 'Group work' }, { icon: 'help', label: 'Help' }, { icon: 'info', label: 'Info' }, { icon: 'home', label: 'Home' }, { icon: 'label', label: 'Label' }, { icon: 'language', label: 'Language' }, { icon: 'lightbulb_outline', label: 'Idea' }, { icon: 'lock', label: 'Lock' }, { icon: 'motorcycle', label: 'Motorcycle' }, { icon: 'record_voice_over', label: 'Voice' }, { icon: 'schedule', label: 'Schedule' }, { icon: 'room', label: 'Map' }, { icon: 'report_problem', label: 'Alert' }, { icon: 'search', label: 'Search' }, { icon: 'shopping_cart', label: 'Shopping' }, { icon: 'theaters', label: 'Movie' }, { icon: 'translate', label: 'Translation' }, { icon: 'trending_up', label: 'Trends' }, { icon: 'work', label: 'Work' }, { icon: 'library_music', label: 'Music' }, { icon: 'play_circle_outline', label: 'Video' }, { icon: 'call', label: 'Phone' }, { icon: 'chat_bubble', label: 'Chat' }, { icon: 'weekend', label: 'Weekend' }, { icon: 'attach_money', label: 'Money' }, { icon: 'insert_emoticon', label: 'Smile' }, { icon: 'videogame_asset', label: 'Video Games' }, { icon: 'tv', label: 'TV' }, { icon: 'directions_run', label: 'Run' }, { icon: 'local_cafe', label: 'Coffee' }, { icon: 'beach_access', label: 'Beach' }, { icon: 'cake', label: 'Birthday' }, { icon: 'school', label: 'School' }],
+        newChannelTitle: '',
+        newChannelRestricted: false,
+        newChannelIcon: 'default',
+        showCreatePrivateChannelDialog: false,
+        privateChatUsers: [],
+        users: [
+          { nickname: 'Sam', 'avatar': 'https://randomuser.me/api/portraits/men/' + Math.floor(Math.random() * 100) + '.jpg' },
+          { nickname: 'Flo', 'avatar': 'https://randomuser.me/api/portraits/women/' + Math.floor(Math.random() * 100) + '.jpg' }
+        ]
+      }
     },
-    initializePrivateChannels () {
-      this.privateChannels = []
-      window.kuzzle.collection('slack', 'foo').search({ query: { term: { type: 'private' } } }, (err, res) => {
-        if (err) {
-
-        } else {
-          this.$store.dispatch(SET_PRIVATE_CHANNELS, res.documents)
-        }
-      })
+    computed: {
+      title: function () { return this.$store.state.channels.currentChannel.label }
     },
-    subscribeToChannels () {
-      window.kuzzle.collection('slack', 'foo').subscribe({}, (err, res) => {
-        if (err) {
-
-        } else {
-          switch (res.action) {
-            case 'create':
-              if (res.document.content.type === 'private') {
-                this.privateChannels.push({ icon: res.document.content.icon, text: res.document.content.label, id: res.document.id })
-              } else {
-                this.channels.push({ icon: res.document.content.icon, text: res.document.content.label, id: res.document.id })
-              }
-              break
-            case 'delete':
-              this.channels.forEach((channel, index) => {
-                if (channel.id === res.document.id) {
-                  this.channels.splice(index, 1)
-                }
-              })
-              this.privateChannels.forEach((channel, index) => {
-                if (channel.id === res.document.id) {
-                  this.privateChannels.splice(index, 1)
-                }
-              })
-              break
-            default:
-              break
+    mounted () {
+      this.$store.dispatch(SET_CURRENT_CHANNEL, { id: '#kuzzle', label: '#kuzzle' })
+      this.initializeChannels()
+      this.initializePrivateChannels()
+    },
+    methods: {
+      initializeChannels () {
+        window.kuzzle.collection('slack', 'foo').search({ query: { terms: { type: ['public', 'restricted'] } } }, (err, res) => {
+          if (!err) {
+            this.$store.dispatch(SET_CHANNELS, res.documents)
           }
-        }
-      })
-    },
-    channelUnread (channel) {
-      return channel.unread > 0 ? { value: channel.unread, visible: true } : { visible: false }
-    },
-    createChannel () {
-      this.loading = true
 
-      let channel = new Document(window.kuzzle.collection('slack', 'foo'), {
-        label: this.newChannelTitle,
-        type: this.newChannelRestricted ? 'restricted' : 'public',
-        icon: this.newChannelIcon
-      })
+          this.subscribeToChannels()
+        })
+      },
+      initializePrivateChannels () {
+        window.kuzzle.collection('slack', 'foo').search({ query: { term: { type: 'private' } } }, (err, res) => {
+          if (!err) {
+            this.$store.dispatch(SET_PRIVATE_CHANNELS, res.documents)
+          }
+        })
+      },
+      subscribeToChannels () {
+        window.kuzzle.collection('slack', 'foo').subscribe({}, (err, res) => {
+          if (!err) {
+            if (res.action === 'create') {
+              this.$store.dispatch(ADD_TO_CHANNELS, res.document)
+            }
+            if (res.action === 'delete') {
+              this.$store.dispatch(DELETE_FROM_CHANNELS, res.document)
+            }
+          }
+        })
+      },
+      channelUnread (channel) {
+        return channel.unread > 0 ? { value: channel.unread, visible: true } : { visible: false }
+      },
+      createChannel () {
+        this.loading = true
 
-      window.kuzzle.collection('slack', 'foo').createDocument('#' + this.newChannelTitle, channel, (err, res) => {
-        if (err) {
+        let channel = new Document(window.kuzzle.collection('slack', 'foo'), {
+          label: this.newChannelTitle,
+          type: this.newChannelRestricted ? 'restricted' : 'public',
+          icon: this.newChannelIcon
+        })
 
-        } else {
-          this.showCreateChannelPopup = false
-          this.$emit('channel-switch', {
-            id: this.newChannelTitle,
-            label: this.newChannelTitle,
-            type: this.newChannelRestricted ? 'restricted' : 'public',
-            icon: this.newChannelIcon
-          })
-        }
-
+        window.kuzzle.collection('slack', 'foo').createDocument('#' + this.newChannelTitle, channel, (err, res) => {
+          if (!err) {
+            this.closeCreateChannelDialog()
+          }
+        })
+      },
+      closeCreateChannelDialog () {
+        this.showCreateChannelDialog = false
         this.loading = false
         this.newChannelTitle = ''
         this.newChannelRestricted = false
         this.newChannelIcon = 'default'
-      })
+      }
     }
   }
-}
 </script>
 
 <style scoped>
-.slide-fade-enter-active {
-transition: all .1s ease;
-}
-.slide-fade-leave-active {
-transition: all .1s cubic-bezier(1.0, 0.5, 0.8, 1.0);
-}
-.slide-fade-enter, .slide-fade-leave-to
-/* .slide-fade-leave-active for <2.1.8 */ {
-transform: translateX(100px);
-opacity: 0;
-}
+  .slide-fade-enter-active {
+    transition: all .1s ease;
+  }
+  .slide-fade-leave-active {
+    transition: all .1s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+  }
+  .slide-fade-enter, .slide-fade-leave-to
+    /* .slide-fade-leave-active for <2.1.8 */ {
+    transform: translateX(100px);
+    opacity: 0;
+  }
 </style>
