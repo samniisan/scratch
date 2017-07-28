@@ -36,7 +36,7 @@
                                                     </v-btn>
                                                 </v-list-tile-action>
                                             </v-list-tile>
-                                            <v-divider v-if="index + 1 < messages.length" inset></v-divider>
+                                            <v-divider v-if="index + 1 < messages.length"></v-divider>
                                         </transition>
                                     </template>
                                 </v-list>

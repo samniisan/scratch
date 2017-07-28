@@ -151,7 +151,7 @@
                     </v-select>
                 </v-card-text>
                 <v-card-actions>
-                    <v-btn block class="orange--text" type="submit" flat @click.native="createChannel" :loading="loading">Let's chat!</v-btn>
+                    <v-btn block class="orange--text" type="submit" flat @click.native="createPrivateChannel" :loading="loading">Let's chat!</v-btn>
                     <v-btn block class="green--text" flat @click.native="showCreatePrivateChannelDialog = false">Nevermind</v-btn>
                 </v-card-actions>
             </v-card>
@@ -243,6 +243,26 @@
         this.newChannelTitle = ''
         this.newChannelRestricted = false
         this.newChannelIcon = 'default'
+      },
+      createPrivateChannel () {
+        this.loading = true
+
+        let channel = new Document(window.kuzzle.collection('slack', 'foo'), {
+          label: 'Private',
+          type: 'private',
+          icon: ''
+        })
+
+        window.kuzzle.collection('slack', 'foo').createDocument(this.newChannelTitle, channel, (err, res) => {
+          if (!err) {
+            this.closeCreatePrivateChannelDialog()
+          }
+        })
+      },
+      closeCreatePrivateChannelDialog () {
+        this.showCreatePrivateChannelDialog = false
+        this.loading = false
+        this.privateChatUsers = []
       }
     }
   }
