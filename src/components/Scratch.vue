@@ -20,7 +20,7 @@
         </transition>
         <main>
             <router-view></router-view>
-            <v-container style="margin-top:40px;">
+            <v-container style="margin-top: 60px;">
                 <v-layout align-center justify-center>
                     <v-flex sm12>
                         <scratch-login-dialog
@@ -124,6 +124,7 @@
                                     <v-card-title>
                                         <span class="headline">New poll</span>
                                     </v-card-title>
+                                    <input type="file" v-on:change="imgToBase64"/>
                                     <v-card-text>
                                         <v-text-field label="Question" v-model="newPollQuestion" required></v-text-field>
                                         <v-text-field v-for="index in [1, 2, 3, 4]" :label="'Choice #' + index" v-model="newPollChoices[index - 1]" required></v-text-field>
@@ -138,44 +139,44 @@
                         </v-flex>
                     </v-flex>
                 </v-layout>
+                <span style="position:sticky;">
+                    <v-container>
+                        <v-layout>
+                            <v-flex sm8 offset-sm2>
+                                <v-card>
+                                    <v-toolbar class="light-green darken-4" dark dense>
+                                        <v-toolbar-title row>Compose</v-toolbar-title>
+                                        <v-spacer></v-spacer>
+                                        <scratch-typing></scratch-typing>
+                                        <v-icon class="white--text" @click="sendMessage">send</v-icon>
+                                    </v-toolbar>
+                                    <v-system-bar status class="primary" lights-out>
+                                        <v-spacer></v-spacer>
+                                        <v-icon>network_wifi</v-icon>
+                                        <v-icon>signal_cellular_null</v-icon>
+                                        <v-icon>battery_full</v-icon>
+                                        <span>12:31</span>
+                                    </v-system-bar>
+                                    <v-container fluid class="pa-0">
+                                        <v-layout wrap>
+                                            <v-flex xs12>
+                                                <v-divider></v-divider>
+                                                <v-text-field
+                                                        v-model="message"
+                                                        full-width
+                                                        single-line
+                                                        autofocus
+                                                        @input="typing">
+                                                </v-text-field>
+                                            </v-flex>
+                                        </v-layout>
+                                    </v-container>
+                                </v-card>
+                            </v-flex>
+                        </v-layout>
+                    </v-container>
+                </span>
             </v-container>
-            <span style="position:sticky;">
-                <v-container>
-                    <v-layout>
-                        <v-flex sm8 offset-sm2>
-                            <v-card>
-                                <v-toolbar class="light-green darken-4" dark dense>
-                                    <v-toolbar-title row>Compose</v-toolbar-title>
-                                    <v-spacer></v-spacer>
-                                    <scratch-typing></scratch-typing>
-                                    <v-icon class="white--text" @click="sendMessage">send</v-icon>
-                                </v-toolbar>
-                                <v-system-bar status class="primary" lights-out>
-                                    <v-spacer></v-spacer>
-                                    <v-icon>network_wifi</v-icon>
-                                    <v-icon>signal_cellular_null</v-icon>
-                                    <v-icon>battery_full</v-icon>
-                                    <span>12:31</span>
-                                </v-system-bar>
-                                <v-container fluid class="pa-0">
-                                    <v-layout wrap>
-                                        <v-flex xs12>
-                                            <v-divider></v-divider>
-                                            <v-text-field
-                                                v-model="message"
-                                                full-width
-                                                single-line
-                                                autofocus
-                                                @input="typing">
-                                            </v-text-field>
-                                        </v-flex>
-                                    </v-layout>
-                                </v-container>
-                            </v-card>
-                        </v-flex>
-                    </v-layout>
-                </v-container>
-            </span>
         </main>
     </v-app>
 </template>
@@ -207,7 +208,8 @@
         bumper: { user: {}, back: false },
         showCreatePollDialog: false,
         newPollQuestion: '',
-        newPollChoices: ['', '', '', '']
+        newPollChoices: ['', '', '', ''],
+        newPollImg: ''
       }
     },
     watch: {
@@ -390,16 +392,20 @@
         })
 
         let poll = new Document(window.kuzzle.collection('slack-messages', 'foo'), {
-          img: 'http://www.planwallpaper.com/static/images/b807c2282ab0a491bd5c5c1051c6d312_rP0kQjJ.jpg',
+          // img: 'http://www.planwallpaper.com/static/images/b807c2282ab0a491bd5c5c1051c6d312_rP0kQjJ.jpg',
+          img: this.newPollImg,
           question: this.newPollQuestion,
           choices: choices
         })
+
+        console.log(this.newPollImg)
 
         window.kuzzle.collection('slack-polls', 'foo').createDocument(poll, (err, res) => {
           if (!err) {
             this.loading = false
             this.newPollQuestion = ''
             this.newPollChoices = ['', '', '', '']
+            this.newPollImg = ''
             this.polls.push({ id: res.id, img: res.content.img, title: res.content.question, choices: res.content.choices })
             this.showCreatePollDialog = false
           }
@@ -474,6 +480,16 @@
         ].find(e => {
           return rate >= e.r
         }).c + ' ' + (front ? 'darken-2' : 'lighten-3')
+      },
+      imgToBase64 () {
+        let file = document.querySelector('input[type=file]').files[0]
+        let reader = new FileReader()
+
+        reader.addEventListener('load', () => {
+          this.newPollImg = reader.result
+        }, false)
+
+        reader.readAsDataURL(file)
       }
     }
   }
