@@ -59,11 +59,46 @@
                 </v-list-tile>
             </v-list>
         </v-navigation-drawer>
+        <v-navigation-drawer
+                persistent
+                clipped
+                right
+                floating
+                enable-resize-watcher
+                v-model="showContextDrawer">
+            <v-list>
+                <v-list-tile v-for="user in $store.getters.users" :key="user.id" ripple avatar>
+                    <v-list-tile-avatar class="grey--text red--after">
+                        <img :src="user.avatar" alt="">
+                    </v-list-tile-avatar>
+                    <v-list-tile-title v-text="user.nickname"></v-list-tile-title>
+                    <v-list-tile-action>
+                        <v-menu
+                            transition="scale-transition">
+                            <v-btn slot="activator" icon ripple>
+                                <v-icon class="grey--text text--lighten-1">menu</v-icon>
+                            </v-btn>
+                            <v-list>
+                                <v-list-tile>
+                                    <v-list-tile-title>Show details</v-list-tile-title>
+                                </v-list-tile>
+                                <v-list-tile>
+                                    <v-list-tile-title>Start a conversation</v-list-tile-title>
+                                </v-list-tile>
+                                <v-list-tile>
+                                    <v-list-tile-title @click="$emit('bump', user.id)">Bump</v-list-tile-title>
+                                </v-list-tile>
+                            </v-list>
+                        </v-menu>
+                    </v-list-tile-action>
+                </v-list-tile>
+            </v-list>
+        </v-navigation-drawer>
         <v-toolbar fixed class="light-green lighten-1">
             <v-toolbar-title>
                 <v-toolbar-side-icon @click.native.stop="show = !show"></v-toolbar-side-icon>
             </v-toolbar-title>
-            <span class="title"><transition name="slide-fade" mode="out-in" appear><v-chip label :key="title"><v-icon left>forum</v-icon>{{ title }}</v-chip></transition></span>
+            <span class="title"><transition name="slide-fade" mode="out-in" appear><v-chip label :key="title"><v-icon left>{{ icon }}</v-icon>{{ title }}</v-chip></transition></span>
             <v-spacer></v-spacer>
             <v-text-field
                 label="Search..."
@@ -71,7 +106,10 @@
                 append-icon="search"
                 dark
                 hide-details
-            ></v-text-field>
+                v-model="searchInput"
+                @input="searchMessages">
+            </v-text-field>
+            <v-btn icon @click.native.stop="showContextDrawer = !showContextDrawer"><v-icon>more_vert</v-icon></v-btn>
         </v-toolbar>
         <v-dialog v-model="showCreateChannelDialog" persistent>
             <v-card>
@@ -168,6 +206,7 @@
     data () {
       return {
         show: true,
+        showContextDrawer: true,
         showCreateChannelDialog: false,
         loading: false,
         channelIcons: [{ icon: 'forum', label: 'Default' }, { icon: 'announcement', label: 'Announcement' }, { icon: 'android', label: 'Android' }, { icon: 'bug_report', label: 'Bug' }, { icon: 'favorite', label: 'Favorite' }, { icon: 'flight_takeoff', label: 'Flight' }, { icon: 'fingerprint', label: 'Fingerprint' }, { icon: 'gif', label: 'Gif' }, { icon: 'group_work', label: 'Group work' }, { icon: 'help', label: 'Help' }, { icon: 'info', label: 'Info' }, { icon: 'home', label: 'Home' }, { icon: 'label', label: 'Label' }, { icon: 'language', label: 'Language' }, { icon: 'lightbulb_outline', label: 'Idea' }, { icon: 'lock', label: 'Lock' }, { icon: 'motorcycle', label: 'Motorcycle' }, { icon: 'record_voice_over', label: 'Voice' }, { icon: 'schedule', label: 'Schedule' }, { icon: 'room', label: 'Map' }, { icon: 'report_problem', label: 'Alert' }, { icon: 'search', label: 'Search' }, { icon: 'shopping_cart', label: 'Shopping' }, { icon: 'theaters', label: 'Movie' }, { icon: 'translate', label: 'Translation' }, { icon: 'trending_up', label: 'Trends' }, { icon: 'work', label: 'Work' }, { icon: 'library_music', label: 'Music' }, { icon: 'play_circle_outline', label: 'Video' }, { icon: 'call', label: 'Phone' }, { icon: 'chat_bubble', label: 'Chat' }, { icon: 'weekend', label: 'Weekend' }, { icon: 'attach_money', label: 'Money' }, { icon: 'insert_emoticon', label: 'Smile' }, { icon: 'videogame_asset', label: 'Video Games' }, { icon: 'tv', label: 'TV' }, { icon: 'directions_run', label: 'Run' }, { icon: 'local_cafe', label: 'Coffee' }, { icon: 'beach_access', label: 'Beach' }, { icon: 'cake', label: 'Birthday' }, { icon: 'school', label: 'School' }],
@@ -179,14 +218,16 @@
         users: [
           { nickname: 'Sam', 'avatar': 'https://randomuser.me/api/portraits/men/' + Math.floor(Math.random() * 100) + '.jpg' },
           { nickname: 'Flo', 'avatar': 'https://randomuser.me/api/portraits/women/' + Math.floor(Math.random() * 100) + '.jpg' }
-        ]
+        ],
+        searchInput: ''
       }
     },
     computed: {
-      title: function () { return this.$store.state.channels.currentChannel.label }
+      title: function () { return this.$store.state.channels.currentChannel.label },
+      icon: function () { return this.$store.state.channels.currentChannel.type === 'private' ? 'forum' : this.$store.state.channels.currentChannel.icon }
     },
     mounted () {
-      this.$store.dispatch(SET_CURRENT_CHANNEL, { id: '#kuzzle', label: '#kuzzle' })
+      this.$store.dispatch(SET_CURRENT_CHANNEL, { id: '#kuzzle', label: '#kuzzle', icon: 'forum' })
       this.initializeChannels()
       this.initializePrivateChannels()
     },
@@ -263,6 +304,9 @@
         this.showCreatePrivateChannelDialog = false
         this.loading = false
         this.privateChatUsers = []
+      },
+      searchMessages () {
+        this.$emit('search-messages', this.searchInput)
       }
     }
   }

@@ -19,8 +19,8 @@ const state = {
 export const mutations = {
   [SET_CURRENT_CHANNEL] (state, channel) {
     channel.unread = 0
-    if (typeof getters.getChannelById(state, channel.id) !== 'undefined') {
-      channel.speaking = getters.getChannelById(state, channel.id).speaking
+    if (typeof getters.getChannelById(state)(channel.id) !== 'undefined') {
+      channel.speaking = getters.getChannelById(state)(channel.id).speaking
     } else {
       channel.speaking = []
     }
@@ -56,25 +56,25 @@ export const mutations = {
     channel.unread = channel.unread + 1 || 1
   },
   [SET_SPEAKING] (state, data) {
-    let channel = getters.getChannelById(state, data.channel)
+    let channel = getters.getChannelById(state)(data.channel)
     let speaking = []
 
-    if (channel.speaking.filter(user => user.user === data.user).length === 0) {
-      speaking = {user: data.user, typing: data.typing}
+    if (channel.speaking.filter(speaking => speaking.userId === data.userId).length === 0) {
+      speaking = { userId: data.userId, typing: data.typing }
       channel.speaking.push(speaking)
       if (data.channel === state.currentChannel.id) {
-        state.currentChannel.speaking.push(speaking)
+        state.currentChannel.speaking = channel.speaking
       }
     } else {
-      channel.speaking.forEach(user => {
-        if (user.user === data.user) {
-          user.typing = data.typing
+      channel.speaking.forEach(speaking => {
+        if (speaking.userId === data.userId) {
+          speaking.typing = data.typing
         }
       })
       if (data.channel === state.currentChannel.id) {
-        state.currentChannel.speaking.forEach(user => {
-          if (user.user === data.user) {
-            user.typing = data.typing
+        state.currentChannel.speaking.forEach(speaking => {
+          if (speaking.userId === data.userId) {
+            speaking.typing = data.typing
           }
         })
       }

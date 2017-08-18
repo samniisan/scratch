@@ -2,8 +2,8 @@
     <span class="text-xs">
         <span v-for="s in speaking">
             <transition name="slide-fade" mode="out-in" appear>
-                <v-chip v-if="s.typing" label class="green white--text">
-                    <v-icon light left>keyboard</v-icon>{{ s.user }}
+                <v-chip small v-if="s.typing" label class="lime dark--text">
+                    <v-icon light left>keyboard</v-icon>{{ $store.getters.getUserById(s.userId).nickname }}
                 </v-chip>
             </transition>
         </span>
@@ -28,7 +28,7 @@
   }
   .slide-fade-enter, .slide-fade-leave-to
     /* .slide-fade-leave-active for <2.1.8 */ {
-    transform: translateX(-100px);
+    transform: translateX(10px);
     opacity: 0;
   }
 </style>

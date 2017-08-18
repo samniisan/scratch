@@ -31,7 +31,7 @@ export default {
 
       channel.id = channelData.id
       channel.label = channelData.content.label
-      channel.icon = 'https://randomuser.me/api/portraits/men/' + Math.floor(Math.random() * 100) + '.jpg'
+      channel.icon = channelData.content.icon
       channel.type = channelData.content.type
       channel.speaking = []
       channel.typingMessage = ''
