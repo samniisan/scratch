@@ -1,7 +1,7 @@
 <template>
     <v-dialog v-model="show" persistent>
         <v-tabs v-model="currentTab" dark icons centered>
-            <v-tabs-bar slot="activators" class="light-green darken-2">
+            <v-tabs-bar class="light-green darken-2">
                 <v-tabs-slider class="yellow"></v-tabs-slider>
                 <v-tabs-item href="#tab-login">
                     <v-icon>fingerprint</v-icon>Login
@@ -10,47 +10,50 @@
                     <v-icon>verified_user</v-icon>Register
                 </v-tabs-item>
             </v-tabs-bar>
-            <v-tabs-content
-                :key="login"
-                :id="'tab-login'">
-                <v-card>
-                    <v-card-title>
-                        <span class="headline">Login to Scratch</span>
-                    </v-card-title>
-                    <v-card-text>
-                        <v-text-field label="Email" required v-model="loginEmail"></v-text-field>
-                        <v-text-field label="Password" type="password" required v-model="loginPassword"></v-text-field>
-                        <small>*indicates required field</small>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-btn block class="orange--text" type="submit" flat @click.native="login" :loading="loading">Login</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-tabs-content>
-            <v-tabs-content
-                :key="register"
-                :id="'tab-register'">
-                <v-card>
-                    <v-card-title>
-                        <span class="headline">❤ Join Scratch️</span>
-                    </v-card-title>
-                    <v-card-text>
-                        <v-text-field label="Email" required v-model="registerEmail"></v-text-field>
-                        <v-text-field label="Nickname" required v-model="registerNickname"></v-text-field>
-                        <v-text-field label="Password" type="password" required v-model="registerPassword"></v-text-field>
-                        <v-text-field label="Password confirmation" type="password" required v-model="registerPasswordConfirmation"></v-text-field>
-                        <small>*indicates required field</small>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-btn block class="orange--text" flat @click.native="register">Register</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-tabs-content>
+            <v-tabs-items>
+                <v-tabs-content
+                    :key="login"
+                    :id="'tab-login'">
+                    <v-card>
+                        <v-card-title>
+                            <span class="headline">Login to Scratch</span>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-text-field label="Email" required v-model="loginEmail"></v-text-field>
+                            <v-text-field label="Password" type="password" required v-model="loginPassword"></v-text-field>
+                            <small>*indicates required field</small>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-btn block class="orange--text" type="submit" flat @click.native="login" :loading="loading">Login</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-tabs-content>
+                <v-tabs-content
+                    :key="register"
+                    :id="'tab-register'">
+                    <v-card>
+                        <v-card-title>
+                            <span class="headline">❤ Join Scratch️</span>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-text-field label="Email" required v-model="registerEmail"></v-text-field>
+                            <v-text-field label="Nickname" required v-model="registerNickname"></v-text-field>
+                            <v-text-field label="Password" type="password" required v-model="registerPassword"></v-text-field>
+                            <v-text-field label="Password confirmation" type="password" required v-model="registerPasswordConfirmation"></v-text-field>
+                            <small>*indicates required field</small>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-btn block class="orange--text" flat @click.native="register">Register</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-tabs-content>
+            </v-tabs-items>
         </v-tabs>
     </v-dialog>
 </template>
 
 <script>
+  import Document from 'kuzzle-sdk/src/Document'
   import md5 from 'md5'
   import { SET_CURRENT_USER } from '../vuex/modules/auth/mutation-types'
 
@@ -129,8 +132,20 @@
             } else {
               this.$store.dispatch(SET_CURRENT_USER, {username: this.registerEmail, password: this.registerPassword})
                 .then(() => {
-                  this.loading = false
-                  this.show = false
+                  let newUser = new Document(window.kuzzle.collection('slack-messages', 'foo'), this.registerEmail, {
+                    nickname: userDocument.content.nickname,
+                    avatar: userDocument.content.avatar
+                  })
+
+                  window.kuzzle.collection('slack-users', 'foo').createDocument(newUser, (err, res) => {
+                    if (err) {
+                      this.loading = false
+                      this.errors.push(err.message)
+                    } else {
+                      this.loading = false
+                      this.show = false
+                    }
+                  })
                 })
             }
           })

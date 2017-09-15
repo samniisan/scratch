@@ -124,8 +124,8 @@
                                     <v-card-title>
                                         <span class="headline">New poll</span>
                                     </v-card-title>
-                                    <input type="file" v-on:change="imgToBase64"/>
                                     <v-card-text>
+                                        <input type="file" v-on:change="imgToBase64"/>
                                         <v-text-field label="Question" v-model="newPollQuestion" required></v-text-field>
                                         <v-text-field v-for="index in [1, 2, 3, 4]" :label="'Choice #' + index" v-model="newPollChoices[index - 1]" required></v-text-field>
                                         <small>*indicates required field</small>
@@ -352,9 +352,9 @@
         this.loginDialog = false
       },
       scrollToBottom () {
-        setTimeout(() => {
+        /* setTimeout(() => {
           window.scrollTo(0, document.body.scrollHeight)
-        }, 0)
+        }, 0) */
       },
       showPolls () {
         this.messages = []
@@ -391,14 +391,11 @@
           choices[i] = { label: e, voters: 0, rate: 0 }
         })
 
-        let poll = new Document(window.kuzzle.collection('slack-messages', 'foo'), {
-          // img: 'http://www.planwallpaper.com/static/images/b807c2282ab0a491bd5c5c1051c6d312_rP0kQjJ.jpg',
+        let poll = new Document(window.kuzzle.collection('slack-polls', 'foo'), {
           img: this.newPollImg,
           question: this.newPollQuestion,
           choices: choices
         })
-
-        console.log(this.newPollImg)
 
         window.kuzzle.collection('slack-polls', 'foo').createDocument(poll, (err, res) => {
           if (!err) {
@@ -462,11 +459,7 @@
         })
       },
       getRateColor (rate, front) {
-        if (!rate) {
-          return 'light-blue ' + (front ? 'darken-2' : 'lighten-3')
-        }
-
-        return [
+        return (!rate) ? 'grey' : [
           { r: 90, c: 'light-blue' },
           { r: 80, c: 'cyan' },
           { r: 70, c: 'teal' },
