@@ -1,8 +1,8 @@
 <template>
     <v-dialog v-model="show" persistent>
         <v-tabs v-model="currentTab" dark icons centered>
-            <v-tabs-bar class="light-green darken-2">
-                <v-tabs-slider class="yellow"></v-tabs-slider>
+            <v-tabs-bar class="deep-purple">
+                <v-tabs-slider class="orange"></v-tabs-slider>
                 <v-tabs-item href="#tab-login">
                     <v-icon>fingerprint</v-icon>Login
                 </v-tabs-item>

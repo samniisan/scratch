@@ -6,8 +6,9 @@ import App from './App'
 import router from './router'
 import store from './vuex/store'
 import Kuzzle from 'kuzzle-sdk'
+import { Picker, Emoji } from 'emoji-mart-vue'
 
-window.kuzzle = new Kuzzle('localhost')
+window.kuzzle = new Kuzzle('10.34.50.59')
 
 Vue.use(Vuetify)
 
@@ -27,6 +28,9 @@ router.beforeEach((to, from, next) => {
     next()
   }
 })
+
+Vue.component('picker', Picker)
+Vue.component('emoji', Emoji)
 
 /* eslint-disable no-new */
 new Vue({

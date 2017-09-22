@@ -7,14 +7,18 @@
             enable-resize-watcher
             v-model="show">
             <v-list>
-                <v-list-tile v-for="channel in $store.state.channels.channels" :key="channel.id" ripple>
-                    <v-list-tile-action>
-                        <v-icon v-badge="channelUnread(channel)" class="grey--text red--after">{{ channel.icon }}</v-icon>
-                    </v-list-tile-action>
-                    <v-list-tile-content>
-                        <v-list-tile-title @click="$emit('channel-switch', channel)">{{ channel.label }}</v-list-tile-title>
-                    </v-list-tile-content>
-                </v-list-tile>
+                <template v-for="channel in $store.state.channels.channels">
+                    <transition name="slide-fade" mode="out-in" appear>
+                        <v-list-tile :key="channel.id" ripple>
+                            <v-list-tile-action>
+                                <v-icon v-badge="channelUnread(channel)" class="grey--text red--after">{{ channel.icon }}</v-icon>
+                            </v-list-tile-action>
+                            <v-list-tile-content>
+                                <v-list-tile-title @click="$emit('channel-switch', channel)">{{ channel.label }}</v-list-tile-title>
+                            </v-list-tile-content>
+                        </v-list-tile>
+                    </transition>
+                </template>
                 <v-list-tile class="mt-3">
                     <v-list-tile-action>
                         <v-icon class="grey--text text--darken-1">add_circle_outline</v-icon>
@@ -23,15 +27,19 @@
                 </v-list-tile>
                 <v-subheader class="mt-3 grey--text text--darken-1">PRIVATE MESSAGES</v-subheader>
                 <v-list>
-                    <v-list-tile v-for="privateChannel in $store.state.channels.privateChannels" :key="privateChannel.id" ripple avatar>
-                        <v-list-tile-avatar class="grey--text red--after">
-                            <img :src="privateChannel.icon" alt="">
-                        </v-list-tile-avatar>
-                        <v-list-tile-title v-text="privateChannel.label" @click="$emit('channel-switch', privateChannel)"></v-list-tile-title>
-                        <v-list-tile-action>
-                            <v-icon v-bind:class="[channelUnread(privateChannel).visible ? 'teal--text' : 'grey--text']" v-badge="channelUnread(privateChannel)">chat_bubble</v-icon>
-                        </v-list-tile-action>
-                    </v-list-tile>
+                    <template v-for="privateChannel in $store.state.channels.privateChannels">
+                        <transition name="slide-fade" mode="out-in" appear>
+                            <v-list-tile :key="privateChannel.id" ripple avatar>
+                                <v-list-tile-avatar class="grey--text red--after">
+                                    <img :src="getPrivateChannelAvatar(privateChannel.users)" alt="">
+                                </v-list-tile-avatar>
+                                <v-list-tile-title v-text="privateChannel.label" @click="$emit('channel-switch', privateChannel)"></v-list-tile-title>
+                                <v-list-tile-action>
+                                    <v-icon v-bind:class="[channelUnread(privateChannel).visible ? 'teal--text' : 'grey--text']" v-badge="channelUnread(privateChannel)">chat_bubble</v-icon>
+                                </v-list-tile-action>
+                            </v-list-tile>
+                        </transition>
+                    </template>
                 </v-list>
                 <v-list-tile class="mt-3">
                     <v-list-tile-action>
@@ -71,7 +79,10 @@
                     <v-list-tile-avatar class="grey--text red--after">
                         <img :src="user.avatar" alt="">
                     </v-list-tile-avatar>
-                    <v-list-tile-title v-text="user.nickname"></v-list-tile-title>
+                    <v-list-tile-content>
+                        <v-list-tile-title v-text="user.nickname"></v-list-tile-title>
+                        <v-list-tile-sub-title v-text="user.id"></v-list-tile-sub-title>
+                    </v-list-tile-content>
                     <v-list-tile-action>
                         <v-menu
                             transition="scale-transition">
@@ -94,7 +105,7 @@
                 </v-list-tile>
             </v-list>
         </v-navigation-drawer>
-        <v-toolbar fixed class="light-green lighten-1">
+        <v-toolbar fixed class="deep-purple lighten-1">
             <v-toolbar-title>
                 <v-toolbar-side-icon @click.native.stop="show = !show"></v-toolbar-side-icon>
             </v-toolbar-title>
@@ -138,14 +149,14 @@
                     <v-checkbox
                         label="Restricted access"
                         v-model="newChannelRestricted"
-                        color="red"
+                        color="deep-purple"
                         value="restricted"
                         hide-details></v-checkbox>
                     <small>*indicates required field</small>
                 </v-card-text>
                 <v-card-actions>
-                    <v-btn block class="orange--text" type="submit" flat @click.native="createChannel" :loading="loading">Create</v-btn>
-                    <v-btn block class="green--text" flat @click.native="showCreateChannelDialog = false">Cancel</v-btn>
+                    <v-btn block class="green--text" type="submit" flat @click.native="createChannel" :loading="loading">Create</v-btn>
+                    <v-btn block class="orange--text" flat @click.native="showCreateChannelDialog = false">Cancel</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -155,15 +166,16 @@
                     <span class="headline">Start a conversation</span>
                 </v-card-title>
                 <v-card-text>
+                    <v-text-field label="Private channel label" v-model="newPrivateChannelTitle" required></v-text-field>
                     <v-select
-                        v-bind:items="users"
+                        v-bind:items="$store.getters.users"
                         v-model="privateChatUsers"
                         label="Users"
                         multiple
                         hint="Let's talk with..."
                         chips
                         item-text="nickname"
-                        item-value="nickname"
+                        item-value="id"
                         autocomplete>
                         <template slot="selection" scope="data">
                             <transition name="slide-fade" appear>
@@ -171,7 +183,7 @@
                                     close
                                     @input="data.parent.selectItem(data.item)"
                                     @click.native.stop
-                                    class="chip--select-multi green black--text subheading"
+                                    class="chip--select-multi deep-purple lighten-2 white--text subheading"
                                     :key="data.item">
                                     <v-avatar>
                                         <img :src="data.item.avatar">
@@ -189,8 +201,8 @@
                     </v-select>
                 </v-card-text>
                 <v-card-actions>
-                    <v-btn block class="orange--text" type="submit" flat @click.native="createPrivateChannel" :loading="loading">Let's chat!</v-btn>
-                    <v-btn block class="green--text" flat @click.native="showCreatePrivateChannelDialog = false">Nevermind</v-btn>
+                    <v-btn block class="green--text" type="submit" flat @click.native="createPrivateChannel" :loading="loading">Let's chat!</v-btn>
+                    <v-btn block class="orange--text" flat @click.native="showCreatePrivateChannelDialog = false">Nevermind</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -199,7 +211,7 @@
 
 <script>
   import Document from 'kuzzle-sdk/src/Document'
-  import { SET_CURRENT_CHANNEL, SET_CHANNELS, SET_PRIVATE_CHANNELS, ADD_TO_CHANNELS, DELETE_FROM_CHANNELS } from '../vuex/modules/channels/mutation-types'
+  import { SET_CHANNELS, SET_PRIVATE_CHANNELS, ADD_TO_CHANNELS, DELETE_FROM_CHANNELS } from '../vuex/modules/channels/mutation-types'
 
   export default {
     name: 'scratch-sidebar',
@@ -211,25 +223,25 @@
         loading: false,
         channelIcons: [{ icon: 'forum', label: 'Default' }, { icon: 'announcement', label: 'Announcement' }, { icon: 'android', label: 'Android' }, { icon: 'bug_report', label: 'Bug' }, { icon: 'favorite', label: 'Favorite' }, { icon: 'flight_takeoff', label: 'Flight' }, { icon: 'fingerprint', label: 'Fingerprint' }, { icon: 'gif', label: 'Gif' }, { icon: 'group_work', label: 'Group work' }, { icon: 'help', label: 'Help' }, { icon: 'info', label: 'Info' }, { icon: 'home', label: 'Home' }, { icon: 'label', label: 'Label' }, { icon: 'language', label: 'Language' }, { icon: 'lightbulb_outline', label: 'Idea' }, { icon: 'lock', label: 'Lock' }, { icon: 'motorcycle', label: 'Motorcycle' }, { icon: 'record_voice_over', label: 'Voice' }, { icon: 'schedule', label: 'Schedule' }, { icon: 'room', label: 'Map' }, { icon: 'report_problem', label: 'Alert' }, { icon: 'search', label: 'Search' }, { icon: 'shopping_cart', label: 'Shopping' }, { icon: 'theaters', label: 'Movie' }, { icon: 'translate', label: 'Translation' }, { icon: 'trending_up', label: 'Trends' }, { icon: 'work', label: 'Work' }, { icon: 'library_music', label: 'Music' }, { icon: 'play_circle_outline', label: 'Video' }, { icon: 'call', label: 'Phone' }, { icon: 'chat_bubble', label: 'Chat' }, { icon: 'weekend', label: 'Weekend' }, { icon: 'attach_money', label: 'Money' }, { icon: 'insert_emoticon', label: 'Smile' }, { icon: 'videogame_asset', label: 'Video Games' }, { icon: 'tv', label: 'TV' }, { icon: 'directions_run', label: 'Run' }, { icon: 'local_cafe', label: 'Coffee' }, { icon: 'beach_access', label: 'Beach' }, { icon: 'cake', label: 'Birthday' }, { icon: 'school', label: 'School' }],
         newChannelTitle: '',
+        newPrivateChannelTitle: '',
         newChannelRestricted: false,
-        newChannelIcon: 'default',
+        newChannelIcon: '',
         showCreatePrivateChannelDialog: false,
         privateChatUsers: [],
-        users: [
-          { nickname: 'Sam', 'avatar': 'https://randomuser.me/api/portraits/men/' + Math.floor(Math.random() * 100) + '.jpg' },
-          { nickname: 'Flo', 'avatar': 'https://randomuser.me/api/portraits/women/' + Math.floor(Math.random() * 100) + '.jpg' }
-        ],
         searchInput: ''
       }
     },
     computed: {
-      title: function () { return this.$store.state.channels.currentChannel.label },
+      title: function () { return this.$store.state.channels.currentChannel.label || '#kuzzle' },
       icon: function () { return this.$store.state.channels.currentChannel.type === 'private' ? 'forum' : this.$store.state.channels.currentChannel.icon }
     },
     mounted () {
-      this.$store.dispatch(SET_CURRENT_CHANNEL, { id: '#kuzzle', label: '#kuzzle', icon: 'forum' })
-      this.initializeChannels()
-      this.initializePrivateChannels()
+      let initSideBar = function () {
+        this.initializeChannels()
+        this.initializePrivateChannels()
+      }.bind(this)
+
+      setTimeout(initSideBar, 200)
     },
     methods: {
       initializeChannels () {
@@ -242,17 +254,21 @@
         })
       },
       initializePrivateChannels () {
-        window.kuzzle.collection('slack', 'foo').search({ query: { term: { type: 'private' } } }, (err, res) => {
-          if (!err) {
-            this.$store.dispatch(SET_PRIVATE_CHANNELS, res.documents)
-          }
-        })
+        setTimeout(() => {
+          window.kuzzle.collection('slack', 'foo').search({query: {bool: {should: [{bool: {must: [{match_phrase_prefix: {'users': this.$store.state.auth.user.id}}, {match_phrase_prefix: {type: 'private'}}]}}]}}}, (err, res) => {
+            if (!err) {
+              this.$store.dispatch(SET_PRIVATE_CHANNELS, res.documents)
+            }
+          })
+        }, 200)
       },
       subscribeToChannels () {
         window.kuzzle.collection('slack', 'foo').subscribe({}, (err, res) => {
           if (!err) {
             if (res.action === 'create') {
-              this.$store.dispatch(ADD_TO_CHANNELS, res.document)
+              if ((['public', 'restricted'].includes(res.document.content.type)) || (res.document.content.type === 'private' && res.document.content.users.includes(this.$store.state.auth.user.id))) {
+                this.$store.dispatch(ADD_TO_CHANNELS, res.document)
+              }
             }
             if (res.action === 'delete') {
               this.$store.dispatch(DELETE_FROM_CHANNELS, res.document)
@@ -269,7 +285,7 @@
         let channel = new Document(window.kuzzle.collection('slack', 'foo'), {
           label: this.newChannelTitle,
           type: this.newChannelRestricted ? 'restricted' : 'public',
-          icon: this.newChannelIcon
+          icon: this.newChannelIcon || 'forum'
         })
 
         window.kuzzle.collection('slack', 'foo').createDocument('#' + this.newChannelTitle, channel, (err, res) => {
@@ -283,15 +299,20 @@
         this.loading = false
         this.newChannelTitle = ''
         this.newChannelRestricted = false
-        this.newChannelIcon = 'default'
+        this.newChannelIcon = 'forum'
       },
       createPrivateChannel () {
         this.loading = true
 
+        if (this.privateChatUsers.length === 1) {
+          this.privateChatUsers.push(this.$store.state.auth.user.id)
+        }
+
         let channel = new Document(window.kuzzle.collection('slack', 'foo'), {
-          label: 'Private',
+          label: this.newPrivateChannelTitle,
           type: 'private',
-          icon: ''
+          icon: this.privateChatUsers.length === 2 ? 'end2end' : 'multiple',
+          users: this.privateChatUsers
         })
 
         window.kuzzle.collection('slack', 'foo').createDocument(this.newChannelTitle, channel, (err, res) => {
@@ -304,6 +325,14 @@
         this.showCreatePrivateChannelDialog = false
         this.loading = false
         this.privateChatUsers = []
+        this.newPrivateChannelTitle = ''
+      },
+      getPrivateChannelAvatar (users) {
+        if (users.length === 2) {
+          return users[0] === this.$store.state.auth.user.id ? this.$store.getters.getUserById(users[1]).avatar : this.$store.getters.getUserById(users[0]).avatar
+        }
+
+        return '/static/private-channel.png'
       },
       searchMessages () {
         this.$emit('search-messages', this.searchInput)

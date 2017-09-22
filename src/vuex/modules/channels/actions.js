@@ -17,6 +17,7 @@ export default {
       channel.type = channelData.content.type
       channel.speaking = []
       channel.typingMessage = ''
+      channel.users = channelData.content.users
 
       channels.push(channel)
     })
@@ -35,6 +36,7 @@ export default {
       channel.type = channelData.content.type
       channel.speaking = []
       channel.typingMessage = ''
+      channel.users = channelData.content.users
 
       privateChannels.push(channel)
     })
@@ -50,6 +52,7 @@ export default {
     channel.type = data.content.type
     channel.speaking = []
     channel.typingMessage = ''
+    channel.users = data.content.users
 
     commit(types.ADD_TO_CHANNELS, channel)
   },

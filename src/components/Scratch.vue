@@ -1,6 +1,6 @@
 <template>
     <v-app
-            dark>
+        light>
         <scratch-sidebar
             @logout="logout"
             @channel-switch="switchChannel"
@@ -15,7 +15,7 @@
             v-model="bumpSnackbar">
             <kbd>{{ bumper.user.nickname }}</kbd>bumped you <template v-if="bumper.back">back</template>!
             <v-btn flat class="pink--text" @click.native="bump(bumper.user.id, 1); bumpSnackbar = false;">Bump back!</v-btn>
-            <v-btn flat @click.native="bumpSnackbar = false">Close</v-btn>
+            <v-btn flat @click.native="bumpSnackbar = false" class="white--text">Close</v-btn>
         </v-snackbar>
         </transition>
         <main>
@@ -28,6 +28,31 @@
                             @user-switch="setCurrentUser">
                         </scratch-login-dialog>
                         <div>
+                            <transition name="slide-fade" mode="out-in" appear>
+                                <v-flex sm8 offset-sm2 v-if="searchResults.length > 0 && searchInput.length > 0">
+                                    <v-card>
+                                        <v-card-title primary-title>
+                                            <div>
+                                                <div class="headline">Search in messages</div>
+                                                <span class="grey--text"><pre>{{ searchResults.length }} result(s)</pre></span>
+                                            </div>
+                                        </v-card-title>
+                                        <v-list>
+                                            <template v-for="searchResult in searchResults">
+                                                <v-list-tile avatar>
+                                                    <v-list-tile-avatar>
+                                                        <img v-bind:src="$store.getters.getUserById(searchResult.userId).avatar">
+                                                    </v-list-tile-avatar>
+                                                    <v-list-tile-content>
+                                                        <v-list-tile-sub-title><v-chip label outline class="caption purple"><v-icon>{{ searchResult.channel.icon }}</v-icon>&nbsp;{{ searchResult.channel.label }}</v-chip><b>{{$store.getters.getUserById(searchResult.userId).nickname}}</b>: <i>"{{ searchResult.content }}"</i></v-list-tile-sub-title>
+                                                    </v-list-tile-content>
+                                                </v-list-tile>
+                                            </template>
+                                        </v-list>
+                                    </v-card>
+                                </v-flex>
+                            </transition>
+                            <v-subheader v-if="searchResults.length > 0 && searchInput.length > 0"></v-subheader>
                             <v-flex sm8 offset-sm2 v-if="messages.length > 0">
                                 <v-card>
                                     <v-list two-line>
@@ -55,31 +80,6 @@
                                     </v-list>
                                 </v-card>
                             </v-flex>
-                            <v-subheader></v-subheader>
-                            <transition name="slide-fade" mode="out-in" appear>
-                                <v-flex sm8 offset-sm2 v-if="searchResults.length > 0 && searchInput.length > 0">
-                                    <v-card>
-                                        <v-card-title primary-title>
-                                            <div>
-                                                <div class="headline">Search in messages</div>
-                                                <span class="grey--text"><pre>{{ searchResults.length }} result(s)</pre></span>
-                                            </div>
-                                        </v-card-title>
-                                        <v-list>
-                                            <template v-for="searchResult in searchResults">
-                                                <v-list-tile avatar>
-                                                    <v-list-tile-avatar>
-                                                        <img v-bind:src="$store.getters.getUserById(searchResult.userId).avatar">
-                                                    </v-list-tile-avatar>
-                                                    <v-list-tile-content>
-                                                        <v-list-tile-sub-title><v-chip label outline class="caption lime"><v-icon class="lime--text">{{ searchResult.channel.icon }}</v-icon><kbd>{{ searchResult.channel.label }}</kbd></v-chip><b>{{$store.getters.getUserById(searchResult.userId).nickname}}</b>: "<i>{{ searchResult.content }}</i>"</v-list-tile-sub-title>
-                                                    </v-list-tile-content>
-                                                </v-list-tile>
-                                            </template>
-                                        </v-list>
-                                    </v-card>
-                                </v-flex>
-                            </transition>
                         </div>
                         <v-flex sm8 offset-sm2 v-for="(poll, index) in polls">
                             <v-card>
@@ -90,12 +90,12 @@
                                         <v-layout fill-height>
                                             <v-flex>
                                                 <kbd><span class="headline white--text" v-text="poll.title"></span></kbd>
-                                                <br/>
+                                                <v-subheader></v-subheader>
                                                 <v-flex>
                                                     <template v-for="(choice, choiceIndex) in poll.choices">
                                                         <p>
-                                                            <v-chip class="green white--text">
-                                                                <v-avatar class="green darken-4"><b>{{ choice.voters }}</b></v-avatar>
+                                                            <v-chip class="deep-purple lighten-2 white--text">
+                                                                <v-avatar class="deep-purple darken-4"><b>{{ choice.voters }}</b></v-avatar>
                                                                 {{ choice.label }}
                                                             </v-chip>
                                                             <v-progress-linear height="20" v-model="choice.rate" :color-front="getRateColor(choice.rate, 1)" :color-back="getRateColor(choice.rate)"></v-progress-linear>
@@ -110,7 +110,7 @@
                                     <v-spacer></v-spacer>
                                     <template v-for="(choice, choiceIndex) in poll.choices">
                                   <span @click="sendVote(poll, choiceIndex, choice)">
-                                      <v-btn round ripple class="green">{{ choice.label }}</v-btn>
+                                      <v-btn round ripple dark class="deep-purple lighten-2">{{ choice.label }}</v-btn>
                                   </span>
                                     </template>
                                 </v-card-actions>
@@ -118,7 +118,7 @@
                             <v-subheader></v-subheader>
                         </v-flex>
                         <v-flex sm8 offset-sm2 v-if="$store.getters.currentChannel.id === '#polls'">
-                            <v-btn outline raised block class="lime--text" @click="showCreatePollDialog = true">Create a new poll</v-btn>
+                            <v-btn outline raised block class="purple--text" @click="showCreatePollDialog = true">Create a new poll</v-btn>
                             <v-dialog v-model="showCreatePollDialog" persistent width="60%">
                                 <v-card>
                                     <v-card-title>
@@ -144,34 +144,33 @@
                         <v-layout>
                             <v-flex sm8 offset-sm2>
                                 <v-card>
-                                    <v-toolbar class="light-green darken-4" dark dense>
+                                    <v-toolbar class="purple darken-4" dark dense>
                                         <v-toolbar-title row>Compose</v-toolbar-title>
                                         <v-spacer></v-spacer>
                                         <scratch-typing></scratch-typing>
+                                        <v-icon class="white--text" @click="emojiHidden = !emojiHidden">face</v-icon>
                                         <v-icon class="white--text" @click="sendMessage">send</v-icon>
                                     </v-toolbar>
-                                    <v-system-bar status class="primary" lights-out>
-                                        <v-spacer></v-spacer>
-                                        <v-icon>network_wifi</v-icon>
-                                        <v-icon>signal_cellular_null</v-icon>
-                                        <v-icon>battery_full</v-icon>
-                                        <span>12:31</span>
-                                    </v-system-bar>
                                     <v-container fluid class="pa-0">
                                         <v-layout wrap>
                                             <v-flex xs12>
                                                 <v-divider></v-divider>
                                                 <v-text-field
-                                                        v-model="message"
-                                                        full-width
-                                                        single-line
-                                                        autofocus
-                                                        @input="typing">
+                                                    v-model="message"
+                                                    full-width
+                                                    single-line
+                                                    autofocus
+                                                    @input="typing">
                                                 </v-text-field>
                                             </v-flex>
                                         </v-layout>
                                     </v-container>
                                 </v-card>
+                            </v-flex>
+                        </v-layout>
+                        <v-layout>
+                            <v-flex sm8 offset-sm2>
+                                <picker @click="addEmoji" v-if="!emojiHidden"></picker>
                             </v-flex>
                         </v-layout>
                     </v-container>
@@ -209,7 +208,8 @@
         showCreatePollDialog: false,
         newPollQuestion: '',
         newPollChoices: ['', '', '', ''],
-        newPollImg: ''
+        newPollImg: '',
+        emojiHidden: true
       }
     },
     watch: {
@@ -233,6 +233,7 @@
       }
     },
     mounted () {
+      this.$store.dispatch(SET_CURRENT_CHANNEL, { id: '#kuzzle', label: '#kuzzle', icon: 'forum', users: [] })
       this.initializeUsers()
       this.subscribeToMessages()
       this.retrieveMessages()
@@ -310,7 +311,7 @@
       retrieveMessages () {
         this.messages = []
 
-        window.kuzzle.collection('slack-messages', 'foo').search({ query: { term: { channel: this.$store.state.channels.currentChannel.id.replace('#', '') } }, sort: [{ timestamp: 'asc' }] }, { size: 100 }, (err, res) => {
+        window.kuzzle.collection('slack-messages', 'foo').search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { channel: this.$store.state.channels.currentChannel.id.replace('#', '') } }] } }] } }, sort: [{ timestamp: 'asc' }] }, { size: 100 }, (err, res) => {
           if (!err) {
             if (res.total > 0) {
               res.documents.forEach(message => this.pushMessage(message))
@@ -437,7 +438,20 @@
       },
       searchMessages (searchInput) {
         this.searchInput = searchInput
-        window.kuzzle.collection('slack-messages', 'foo').search({ query: { wildcard: { content: { value: '*' + searchInput.toLowerCase() + '*' } } } }, (err, res) => {
+        window.kuzzle.collection('slack-messages', 'foo').search({ query: {
+          bool: {
+            must: [
+              {
+                wildcard: {
+                  content: '*' + searchInput.toLowerCase() + '*'
+                }
+              },
+              {
+                terms: {
+                  channel: this.$store.getters.channels.map(c => c.id.replace('#', ''))
+                }
+              }
+            ] } } }, (err, res) => {
           if (!err) {
             if (!(this.searchResults.length > 0 && this.searchResults.length === res.total)) {
               this.searchResults = []
@@ -483,6 +497,9 @@
         }, false)
 
         reader.readAsDataURL(file)
+      },
+      addEmoji (emoji) {
+        this.message += emoji.native
       }
     }
   }
