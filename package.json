@@ -16,10 +16,11 @@
   "dependencies": {
     "emoji-mart-vue": "^1.0.2",
     "md5": "^2.2.1",
-    "vue": "^2.3.3",
-    "vue-router": "^2.3.1",
+    "vue": "latest",
+    "vue-router": "latest",
     "vuetify": "latest",
-    "vuex": "^2.3.1"
+    "vuex": "latest",
+    "vuex-router-sync": "latest"
   },
   "devDependencies": {
     "autoprefixer": "^6.7.2",

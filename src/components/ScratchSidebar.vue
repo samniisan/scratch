@@ -11,7 +11,7 @@
                     <transition name="slide-fade" mode="out-in" appear>
                         <v-list-tile :key="channel.id" ripple>
                             <v-list-tile-action>
-                                <v-icon v-badge="channelUnread(channel)" class="grey--text red--after">{{ channel.icon }}</v-icon>
+                                <v-icon v-badge="channelUnread(channel)" :class="getChannelIcon(channel)">{{ channel.icon }}</v-icon>
                             </v-list-tile-action>
                             <v-list-tile-content>
                                 <v-list-tile-title @click="$emit('channel-switch', channel)">{{ channel.label }}</v-list-tile-title>
@@ -25,15 +25,15 @@
                     </v-list-tile-action>
                     <v-list-tile-title @click="showCreateChannelDialog = true" class="grey--text text--darken-1">Create a channel</v-list-tile-title>
                 </v-list-tile>
-                <v-subheader class="mt-3 grey--text text--darken-1">PRIVATE MESSAGES</v-subheader>
-                <v-list>
+                <v-subheader v-if="$store.state.channels.privateChannels.length > 0" class="mt-3 grey--text text--darken-1">PRIVATE MESSAGES</v-subheader>
+                <v-list v-if="$store.state.channels.privateChannels.length > 0">
                     <template v-for="privateChannel in $store.state.channels.privateChannels">
                         <transition name="slide-fade" mode="out-in" appear>
                             <v-list-tile :key="privateChannel.id" ripple avatar>
                                 <v-list-tile-avatar class="grey--text red--after">
                                     <img :src="getPrivateChannelAvatar(privateChannel.users)" alt="">
                                 </v-list-tile-avatar>
-                                <v-list-tile-title v-text="privateChannel.label" @click="$emit('channel-switch', privateChannel)"></v-list-tile-title>
+                                <v-list-tile-title v-text="getPrivateChannelLabel(privateChannel)" @click="$emit('channel-switch', privateChannel)"></v-list-tile-title>
                                 <v-list-tile-action>
                                     <v-icon v-bind:class="[channelUnread(privateChannel).visible ? 'teal--text' : 'grey--text']" v-badge="channelUnread(privateChannel)">chat_bubble</v-icon>
                                 </v-list-tile-action>
@@ -57,7 +57,7 @@
                     <v-list-tile-action>
                         <v-icon class="grey--text text--darken-1">settings</v-icon>
                     </v-list-tile-action>
-                    <v-list-tile-title class="grey--text text--darken-1">Settings</v-list-tile-title>
+                    <v-list-tile-title class="grey--text text--darken-1" @click="account">Settings</v-list-tile-title>
                 </v-list-tile>
                 <v-list-tile>
                     <v-list-tile-action>
@@ -68,14 +68,30 @@
             </v-list>
         </v-navigation-drawer>
         <v-navigation-drawer
-                persistent
-                clipped
-                right
-                floating
-                enable-resize-watcher
-                v-model="showContextDrawer">
+            persistent
+            clipped
+            right
+            floating
+            enable-resize-watcher
+            v-model="showContextDrawer">
+            <v-card class="deep-purple lighten-2 elevation-6">
+                <v-card-text>
+                    <v-container grid-list-md>
+                        <v-layout row wrap>
+                            <v-flex layout align-center justify-center>
+                                <v-avatar
+                                    size="70px"
+                                    class="grey lighten-4">
+                                    <img :src="$store.state.auth.user.avatar" alt="avatar">
+                                </v-avatar>
+                                <span class="headline white--text">&nbsp;{{ $store.state.auth.user.nickname }}</span>
+                            </v-flex>
+                        </v-layout>
+                    </v-container>
+                </v-card-text>
+            </v-card>
             <v-list>
-                <v-list-tile v-for="user in $store.getters.users" :key="user.id" ripple avatar>
+                <v-list-tile v-for="user in $store.getters.users" :key="user.id" ripple avatar v-if="user.id !== $store.state.auth.user.id">
                     <v-list-tile-avatar class="grey--text red--after">
                         <img :src="user.avatar" alt="">
                     </v-list-tile-avatar>
@@ -91,10 +107,10 @@
                             </v-btn>
                             <v-list>
                                 <v-list-tile>
-                                    <v-list-tile-title>Show details</v-list-tile-title>
+                                    <v-list-tile-title @click="$emit('show-user-details', user.id)">Show details</v-list-tile-title>
                                 </v-list-tile>
                                 <v-list-tile>
-                                    <v-list-tile-title>Start a conversation</v-list-tile-title>
+                                    <v-list-tile-title @click="$emit('start-one-to-one', user.id)">Start a conversation</v-list-tile-title>
                                 </v-list-tile>
                                 <v-list-tile>
                                     <v-list-tile-title @click="$emit('bump', user.id)">Bump</v-list-tile-title>
@@ -105,11 +121,11 @@
                 </v-list-tile>
             </v-list>
         </v-navigation-drawer>
-        <v-toolbar fixed class="deep-purple lighten-1">
+        <v-toolbar dark fixed class="deep-purple lighten-1">
             <v-toolbar-title>
                 <v-toolbar-side-icon @click.native.stop="show = !show"></v-toolbar-side-icon>
             </v-toolbar-title>
-            <span class="title"><transition name="slide-fade" mode="out-in" appear><v-chip label :key="title"><v-icon left>{{ icon }}</v-icon>{{ title }}</v-chip></transition></span>
+            <span class="title"><transition name="slide-fade" mode="out-in" appear><v-chip v-if="typeof title !== 'undefined'" label :key="title"><v-icon left>{{ icon }}</v-icon>{{ title }}</v-chip></transition></span>
             <v-spacer></v-spacer>
             <v-text-field
                 label="Search..."
@@ -120,7 +136,7 @@
                 v-model="searchInput"
                 @input="searchMessages">
             </v-text-field>
-            <v-btn icon @click.native.stop="showContextDrawer = !showContextDrawer"><v-icon>more_vert</v-icon></v-btn>
+            <v-btn icon dark @click.native.stop="showContextDrawer = !showContextDrawer"><v-icon>more_vert</v-icon></v-btn>
         </v-toolbar>
         <v-dialog v-model="showCreateChannelDialog" persistent>
             <v-card>
@@ -232,7 +248,7 @@
       }
     },
     computed: {
-      title: function () { return this.$store.state.channels.currentChannel.label || '#kuzzle' },
+      title: function () { return this.$store.state.channels.currentChannel.type === 'private' ? this.getPrivateChannelLabel(this.$store.state.channels.currentChannel) : this.$store.state.channels.currentChannel.label },
       icon: function () { return this.$store.state.channels.currentChannel.type === 'private' ? 'forum' : this.$store.state.channels.currentChannel.icon }
     },
     mounted () {
@@ -255,7 +271,7 @@
       },
       initializePrivateChannels () {
         setTimeout(() => {
-          window.kuzzle.collection('slack', 'foo').search({query: {bool: {should: [{bool: {must: [{match_phrase_prefix: {'users': this.$store.state.auth.user.id}}, {match_phrase_prefix: {type: 'private'}}]}}]}}}, (err, res) => {
+          window.kuzzle.collection('slack', 'foo').search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { 'users': this.$store.state.auth.user.id } }, { match_phrase_prefix: { type: 'private' } }] } }] } } }, (err, res) => {
             if (!err) {
               this.$store.dispatch(SET_PRIVATE_CHANNELS, res.documents)
             }
@@ -304,9 +320,7 @@
       createPrivateChannel () {
         this.loading = true
 
-        if (this.privateChatUsers.length === 1) {
-          this.privateChatUsers.push(this.$store.state.auth.user.id)
-        }
+        this.privateChatUsers.push(this.$store.state.auth.user.id)
 
         let channel = new Document(window.kuzzle.collection('slack', 'foo'), {
           label: this.newPrivateChannelTitle,
@@ -327,6 +341,9 @@
         this.privateChatUsers = []
         this.newPrivateChannelTitle = ''
       },
+      getChannelIcon (channel) {
+        return (channel.id === this.$store.getters.currentChannel.id ? 'purple--text text--lighten-2' : 'gray--text') + ' red--after'
+      },
       getPrivateChannelAvatar (users) {
         if (users.length === 2) {
           return users[0] === this.$store.state.auth.user.id ? this.$store.getters.getUserById(users[1]).avatar : this.$store.getters.getUserById(users[0]).avatar
@@ -334,8 +351,18 @@
 
         return '/static/private-channel.png'
       },
+      getPrivateChannelLabel (channel) {
+        if (channel.label === '' && channel.users.length === 2) {
+          return channel.users[0] === this.$store.state.auth.user.id ? this.$store.getters.getUserById(channel.users[1]).nickname : this.$store.getters.getUserById(channel.users[0]).nickname
+        }
+
+        return channel.label
+      },
       searchMessages () {
         this.$emit('search-messages', this.searchInput)
+      },
+      account () {
+        this.$router.push({ path: '/account' })
       }
     }
   }

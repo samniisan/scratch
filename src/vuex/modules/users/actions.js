@@ -11,6 +11,7 @@ export default {
       user.id = userData.id
       user.nickname = userData.content.nickname
       user.avatar = userData.content.avatar
+      user.ido = userData.content.ido
 
       users.push(user)
     })
@@ -23,6 +24,7 @@ export default {
     user.id = data.id
     user.nickname = data.content.nickname
     user.avatar = data.content.avatar
+    user.ido = data.content.ido
 
     commit(types.ADD_TO_USERS, user)
   },
@@ -32,6 +34,7 @@ export default {
     user.id = data.id
     user.nickname = data.content.nickname
     user.avatar = data.content.avatar
+    user.ido = data.content.ido
 
     commit(types.UPDATE_USER, user)
   },

@@ -28,12 +28,12 @@
                                             <span class="headline">&nbsp;My account</span>
                                         </v-card-title>
                                         <v-card-text>
-                                            <v-text-field label="Email" required v-model="accountEmail"></v-text-field>
                                             <v-text-field label="Nickname" required v-model="accountNickname"></v-text-field>
+                                            <v-text-field label="What I do" required v-model="accountIDo"></v-text-field>
                                             <small>*indicates required field</small>
                                         </v-card-text>
                                         <v-card-actions>
-                                            <v-btn block class="green--text" type="submit" flat @click.native="login" :loading="accountLoading">Save</v-btn>
+                                            <v-btn block class="green--text" type="submit" flat @click.native="accountSave" :loading="accountLoading">Save</v-btn>
                                         </v-card-actions>
                                     </v-card>
                                 </v-tabs-content>
@@ -45,9 +45,7 @@
                                                 <span class="headline">Scratch️ settings</span>
                                             </v-card-title>
                                             <v-card-text>
-                                                <v-checkbox label="Do you agree?" v-model="settingsCheckbox" required
-                                                ></v-checkbox>
-                                                <small>*indicates required field</small>
+                                                <v-switch v-bind:label="'Dark theme'" v-model="settingsDarkTheme" color="orange" hide-details></v-switch>
                                             </v-card-text>
                                             <v-flex sm10 offset-sm1 elevation-3>
                                                 <v-alert error value="true">
@@ -56,8 +54,7 @@
                                                 </v-alert>
                                             </v-flex>
                                             <v-card-actions>
-                                                <v-btn block flat class="green--text" @click="settingsSubmit">Submit</v-btn>
-                                                <v-btn block flat class="orange--text" @click="settingsClear">Clear</v-btn>
+                                                <v-btn block flat class="green--text" :loading="settingsLoading" @click="settingsSave">Save</v-btn>
                                             </v-card-actions>
                                         </v-form>
                                     </v-card>
@@ -77,31 +74,93 @@
                 </v-flex>
             </v-layout>
         </v-container>
+        <v-snackbar
+            :timeout=6000
+            :success="snackbarLevel === 'success'"
+            :error="snackbarLevel === 'error'"
+            v-model="snackbar">
+            {{ snackbarText }}
+            <v-btn dark flat @click.native="snackbar = false">Close</v-btn>
+        </v-snackbar>
     </main>
 </template>
 
 <script>
+  import { SET_CURRENT_USER } from '../vuex/modules/auth/mutation-types'
+  import { UPDATE_USER } from '../vuex/modules/users/mutation-types'
+
   export default {
     components: {},
     name: 'scratch-account',
     data () {
+      let currentUser = this.$store.state.auth.user
+
       return {
+        snackbar: false,
+        snackbarText: '',
+        snackbarLevel: 'success',
         accountLoading: false,
-        accountEmail: this.$store.state.auth.user.id,
-        accountNickname: this.$store.state.auth.user.nickname,
-        accountAvatar: this.$store.state.auth.user.avatar,
-        settingsValid: false,
-        settingsCheckbox: false
+        accountIDo: currentUser.ido,
+        accountNickname: currentUser.nickname,
+        accountAvatar: currentUser.avatar,
+        settingsLoading: false,
+        settingsDarkTheme: currentUser.darkTheme || false,
+        settingsValid: false
       }
     },
     methods: {
-      settingsSubmit () {
+      accountSave () {
+        this.accountLoading = true
+
+        window.kuzzle.collection('slack-users', 'foo').updateDocument(this.$store.state.auth.user.id, {
+          ido: this.accountIDo,
+          nickname: this.accountNickname
+        }, (err, res) => {
+          if (!err) {
+            let updatedUser = Object.assign({ id: this.$store.state.auth.user.id }, res.content)
+
+            localStorage.setItem('user', JSON.stringify(updatedUser))
+            this.$store.commit(SET_CURRENT_USER, updatedUser)
+            this.$store.commit(UPDATE_USER, updatedUser)
+
+            this.showSnackbar('Your modifications were saved successfully!', 'success')
+          } else {
+            this.showSnackbar('An error occurred when updating your account', 'error')
+          }
+
+          this.accountLoading = false
+        })
+      },
+      settingsSave () {
+        this.settingsLoading = true
+
         if (this.$refs.form.validate()) {
-          this.$refs.form.$el.submit()
+          window.kuzzle.collection('slack-users', 'foo').updateDocument(this.$store.state.auth.user.id, {
+            darkTheme: this.settingsDarkTheme
+          }, (err, res) => {
+            if (!err) {
+              let updatedUser = Object.assign({ id: this.$store.state.auth.user.id }, res.content)
+
+              localStorage.setItem('user', JSON.stringify(updatedUser))
+              this.$store.commit(SET_CURRENT_USER, updatedUser)
+              this.$store.commit(UPDATE_USER, updatedUser)
+
+              this.showSnackbar('Your modifications were saved successfully!', 'success')
+            } else {
+              this.showSnackbar('An error occurred when updating your account', 'error')
+            }
+
+            this.settingsLoading = false
+          })
         }
       },
       settingsClear () {
         this.$refs.form.reset()
+      },
+      showSnackbar (message, level) {
+        this.snackbarLevel = level
+        this.snackbarText = message
+        this.snackbar = true
       }
     }
   }
