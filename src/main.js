@@ -18,7 +18,6 @@ router.beforeEach((to, from, next) => {
       if (token !== null) {
         window.kuzzle.checkToken(token, (err, res) => {
           let valid = !(err || !res.valid)
-          console.log('VALID: ' + valid)
           if (valid) {
             store.commit(SET_CURRENT_USER, JSON.parse(localStorage.getItem('user')))
             return next()

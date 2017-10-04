@@ -74,7 +74,7 @@
             floating
             enable-resize-watcher
             v-model="showContextDrawer">
-            <v-card class="deep-purple lighten-2 elevation-6">
+            <v-card class="teal lighten-2 elevation-6">
                 <v-card-text>
                     <v-container grid-list-md>
                         <v-layout row wrap>
@@ -121,7 +121,7 @@
                 </v-list-tile>
             </v-list>
         </v-navigation-drawer>
-        <v-toolbar dark fixed class="deep-purple lighten-1">
+        <v-toolbar dark fixed class="teal lighten-1">
             <v-toolbar-title>
                 <v-toolbar-side-icon @click.native.stop="show = !show"></v-toolbar-side-icon>
             </v-toolbar-title>
@@ -136,6 +136,18 @@
                 v-model="searchInput"
                 @input="searchMessages">
             </v-text-field>
+            <v-card class="teal lighten-1 elevation-0" height="60px">
+                <v-card-text>
+                    <v-container grid-list-md>
+                        <v-layout row wrap>
+                            <v-flex layout>
+                                <p class="body-2 white--text">Powered by</p>
+                            </v-flex>
+                            <img height="30" style="" src="/static/kuzzle.png"/>
+                        </v-layout>
+                    </v-container>
+                </v-card-text>
+            </v-card>
             <v-btn icon dark @click.native.stop="showContextDrawer = !showContextDrawer"><v-icon>more_vert</v-icon></v-btn>
         </v-toolbar>
         <v-dialog v-model="showCreateChannelDialog" persistent>
@@ -165,7 +177,7 @@
                     <v-checkbox
                         label="Restricted access"
                         v-model="newChannelRestricted"
-                        color="deep-purple"
+                        color="teal"
                         value="restricted"
                         hide-details></v-checkbox>
                     <small>*indicates required field</small>
@@ -199,7 +211,7 @@
                                     close
                                     @input="data.parent.selectItem(data.item)"
                                     @click.native.stop
-                                    class="chip--select-multi deep-purple lighten-2 white--text subheading"
+                                    class="chip--select-multi teal lighten-2 white--text subheading"
                                     :key="data.item">
                                     <v-avatar>
                                         <img :src="data.item.avatar">
@@ -342,7 +354,7 @@
         this.newPrivateChannelTitle = ''
       },
       getChannelIcon (channel) {
-        return (channel.id === this.$store.getters.currentChannel.id ? 'purple--text text--lighten-2' : 'gray--text') + ' red--after'
+        return (channel.id === this.$store.getters.currentChannel.id ? 'teal--text text--lighten-2' : 'gray--text') + ' red--after'
       },
       getPrivateChannelAvatar (users) {
         if (users.length === 2) {

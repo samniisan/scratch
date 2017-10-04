@@ -5,7 +5,7 @@
                 <v-flex sm12>
                     <v-flex sm8 offset-sm2 elevation-3>
                         <v-tabs dark fixed centered grow>
-                            <v-tabs-bar class="deep-purple darken-3">
+                            <v-tabs-bar class="teal darken-3">
                                 <v-tabs-slider class="orange"></v-tabs-slider>
                                 <v-tabs-item href="#tab-account">
                                     <v-icon>account_box</v-icon>&nbsp;Account

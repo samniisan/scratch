@@ -48,7 +48,7 @@
                                                         <img v-bind:src="$store.getters.getUserById(searchResult.userId).avatar">
                                                     </v-list-tile-avatar>
                                                     <v-list-tile-content>
-                                                        <v-list-tile-sub-title><v-chip label outline class="caption purple"><v-icon>{{ searchResult.channel.icon }}</v-icon>&nbsp;{{ searchResult.channel.label }}</v-chip><b>{{$store.getters.getUserById(searchResult.userId).nickname}}</b>: <i>"{{ searchResult.content }}"</i></v-list-tile-sub-title>
+                                                        <v-list-tile-sub-title><v-chip label outline class="caption teal"><v-icon>{{ searchResult.channel.icon }}</v-icon>&nbsp;{{ searchResult.channel.label }}</v-chip>&nbsp;<b>{{$store.getters.getUserById(searchResult.userId).nickname}}</b>: <i>"{{ searchResult.content }}"</i></v-list-tile-sub-title>
                                                     </v-list-tile-content>
                                                     <v-list-tile-action>
                                                         <v-list-tile-action-text>{{ searchResult.timestamp }}</v-list-tile-action-text>
@@ -101,8 +101,8 @@
                                                 <v-flex>
                                                     <template v-for="(choice, choiceIndex) in poll.choices">
                                                         <p>
-                                                            <v-chip class="deep-purple lighten-2 white--text">
-                                                                <v-avatar class="deep-purple darken-4"><b>{{ choice.voters }}</b></v-avatar>
+                                                            <v-chip class="teal darken-1 white--text">
+                                                                <v-avatar class="teal darken-4"><b>{{ choice.voters }}</b></v-avatar>
                                                                 {{ choice.label }}
                                                             </v-chip>
                                                             <v-progress-linear height="20" v-model="choice.rate" :color-front="getRateColor(choice.rate, 1)" :color-back="getRateColor(choice.rate)"></v-progress-linear>
@@ -117,15 +117,15 @@
                                     <v-spacer></v-spacer>
                                     <template v-for="(choice, choiceIndex) in poll.choices">
                                   <span @click="sendVote(poll, choiceIndex, choice)">
-                                      <v-btn round ripple dark class="deep-purple lighten-2">{{ choice.label }}</v-btn>
+                                      <v-btn round ripple dark class="teal lighten-2">{{ choice.label }}</v-btn>
                                   </span>
                                     </template>
                                 </v-card-actions>
                             </v-card>
                             <v-subheader></v-subheader>
                         </v-flex>
-                        <v-flex sm8 offset-sm2 v-if="$router.history.current.name === '#scratch-polls'">
-                            <v-btn outline raised block class="purple--text" @click="showCreatePollDialog = true">Create a new poll</v-btn>
+                        <v-flex sm8 offset-sm2 v-if="$router.history.current.name === 'scratch-polls'">
+                            <v-btn outline raised block class="teal--text" @click="showCreatePollDialog = true">Create a new poll</v-btn>
                             <v-dialog v-model="showCreatePollDialog" persistent width="60%">
                                 <v-card>
                                     <v-card-title>
@@ -151,7 +151,7 @@
                         <v-layout>
                             <v-flex sm8 offset-sm2>
                                 <v-card>
-                                    <v-toolbar class="purple darken-4" dark dense>
+                                    <v-toolbar class="teal darken-4" dark dense>
                                         <v-toolbar-title row>Compose</v-toolbar-title>
                                         <v-spacer></v-spacer>
                                         <scratch-typing></scratch-typing>
@@ -355,7 +355,6 @@
             }
             if (message.content.channel === this.$store.state.channels.currentChannel.id) {
               this.pushMessage(message)
-              this.scrollToBottom()
 
               return
             }
@@ -385,8 +384,6 @@
             } else {
               this.messages.push({ header: 'This discussion is empty, try saying something nice!' })
             }
-
-            this.scrollToBottom()
           }
         })
       },
@@ -405,20 +402,10 @@
 
           this.message = ''
           this.typing()
-          this.scrollToBottom()
         })
       },
       switchChannel (channel) {
         this.$router.push({ name: 'scratch-channel', params: { id: channel.id.replace('#', '') } })
-      },
-      setCurrentUser (user) {
-        this.$store.state.auth.user = user
-        this.showLoginDialog = false
-      },
-      scrollToBottom () {
-        /* setTimeout(() => {
-          window.scrollTo(0, document.body.scrollHeight)
-        }, 0) */
       },
       showPolls () {
         this.$router.push({ path: '/polls' })

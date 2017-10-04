@@ -3,7 +3,7 @@
         <v-layout row justify-center style="position: relative;">
             <v-dialog v-model="show" persistent>
                 <v-tabs v-model="currentTab" icons centered>
-                    <v-tabs-bar class="deep-purple lighten-1">
+                    <v-tabs-bar class="teal lighten-1">
                         <v-tabs-slider class="orange"></v-tabs-slider>
                         <v-tabs-item ripple href="#tab-login">
                             <v-icon>fingerprint</v-icon>Login
