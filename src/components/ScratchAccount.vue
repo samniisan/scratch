@@ -1,6 +1,6 @@
 <template>
     <main>
-        <v-container fluid style="margin-top: 60px;">
+        <v-container fluid>
             <v-layout align-center justify-center>
                 <v-flex sm12>
                     <v-flex sm8 offset-sm2 elevation-3>

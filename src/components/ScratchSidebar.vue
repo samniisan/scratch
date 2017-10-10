@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-navigation-drawer
-            class="pb-0"
+            app
             persistent
             clipped
             enable-resize-watcher
@@ -11,7 +11,10 @@
                     <transition name="slide-fade" mode="out-in" appear>
                         <v-list-tile :key="channel.id" ripple>
                             <v-list-tile-action>
-                                <v-icon v-badge="channelUnread(channel)" :class="getChannelIcon(channel)">{{ channel.icon }}</v-icon>
+                                <v-badge color="red darken-1" :value="channel.unread">
+                                    <span slot="badge" v-text="Number(channel.unread)"></span>
+                                    <v-icon :color="getChannelIcon(channel)">{{ channel.icon }}</v-icon>
+                                </v-badge>
                             </v-list-tile-action>
                             <v-list-tile-content>
                                 <v-list-tile-title @click="$emit('channel-switch', channel)">{{ channel.label }}</v-list-tile-title>
@@ -33,9 +36,12 @@
                                 <v-list-tile-avatar class="grey--text red--after">
                                     <img :src="getPrivateChannelAvatar(privateChannel.users)" alt="">
                                 </v-list-tile-avatar>
-                                <v-list-tile-title v-text="getPrivateChannelLabel(privateChannel)" @click="$emit('channel-switch', privateChannel)"></v-list-tile-title>
+                                <v-list-tile-content v-text="getPrivateChannelLabel(privateChannel)" @click="$emit('channel-switch', privateChannel)"></v-list-tile-content>
                                 <v-list-tile-action>
-                                    <v-icon v-bind:class="[channelUnread(privateChannel).visible ? 'teal--text' : 'grey--text']" v-badge="channelUnread(privateChannel)">chat_bubble</v-icon>
+                                    <v-badge left color="red darken-1" :value="privateChannel.unread">
+                                        <span slot="badge" v-text="Number(privateChannel.unread)"></span>
+                                        <v-icon :color="privateChannel.unread > 0 ? 'teal' : ''">chat_bubble</v-icon>
+                                    </v-badge>
                                 </v-list-tile-action>
                             </v-list-tile>
                         </transition>
@@ -68,10 +74,10 @@
             </v-list>
         </v-navigation-drawer>
         <v-navigation-drawer
+            app
             persistent
             clipped
             right
-            floating
             enable-resize-watcher
             v-model="showContextDrawer">
             <v-card class="teal lighten-2 elevation-6">
@@ -121,20 +127,20 @@
                 </v-list-tile>
             </v-list>
         </v-navigation-drawer>
-        <v-toolbar dark fixed class="teal lighten-1">
+        <v-toolbar dark app fixed clipped-left clipped-right class="teal lighten-1">
             <v-toolbar-title>
                 <v-toolbar-side-icon @click.native.stop="show = !show"></v-toolbar-side-icon>
             </v-toolbar-title>
             <span class="title"><transition name="slide-fade" mode="out-in" appear><v-chip v-if="typeof title !== 'undefined'" label :key="title"><v-icon left>{{ icon }}</v-icon>{{ title }}</v-chip></transition></span>
             <v-spacer></v-spacer>
             <v-text-field
-                label="Search..."
-                single-line
-                append-icon="search"
-                dark
-                hide-details
-                v-model="searchInput"
-                @input="searchMessages">
+                    label="Search..."
+                    single-line
+                    append-icon="search"
+                    dark
+                    hide-details
+                    v-model="searchInput"
+                    @input="searchMessages">
             </v-text-field>
             <v-card class="teal lighten-1 elevation-0" height="60px">
                 <v-card-text>
@@ -273,7 +279,7 @@
     },
     methods: {
       initializeChannels () {
-        window.kuzzle.collection('slack', 'foo').search({ query: { terms: { type: ['public', 'restricted'] } } }, (err, res) => {
+        window.kuzzle.collection('slack', 'foo').search({ query: { terms: { type: ['public', 'restricted'] } } }, { size: 100 }, (err, res) => {
           if (!err) {
             this.$store.dispatch(SET_CHANNELS, res.documents)
           }
@@ -283,7 +289,7 @@
       },
       initializePrivateChannels () {
         setTimeout(() => {
-          window.kuzzle.collection('slack', 'foo').search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { 'users': this.$store.state.auth.user.id } }, { match_phrase_prefix: { type: 'private' } }] } }] } } }, (err, res) => {
+          window.kuzzle.collection('slack', 'foo').search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { 'users': this.$store.state.auth.user.id } }, { match_phrase_prefix: { type: 'private' } }] } }] } } }, { size: 100 }, (err, res) => {
             if (!err) {
               this.$store.dispatch(SET_PRIVATE_CHANNELS, res.documents)
             }
@@ -303,9 +309,6 @@
             }
           }
         })
-      },
-      channelUnread (channel) {
-        return channel.unread > 0 ? { value: channel.unread, visible: true } : { visible: false }
       },
       createChannel () {
         this.loading = true

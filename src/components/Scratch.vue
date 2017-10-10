@@ -24,13 +24,13 @@
             </v-snackbar>
         </transition>
         <main>
-            <transition name="slide-fade" mode="out-in" appear>
-                <router-view></router-view>
-            </transition>
             <v-container style="margin-top: 60px;">
                 <v-layout align-center justify-center>
                     <v-flex sm12>
                         <div>
+                            <transition name="slide-fade" mode="out-in" appear>
+                                <router-view></router-view>
+                            </transition>
                             <transition name="slide-fade" mode="out-in" appear>
                                 <v-flex sm8 offset-sm2 v-if="searchResults.length > 0 && searchInput.length > 0">
                                     <v-card>
@@ -48,7 +48,7 @@
                                                         <img v-bind:src="$store.getters.getUserById(searchResult.userId).avatar">
                                                     </v-list-tile-avatar>
                                                     <v-list-tile-content>
-                                                        <v-list-tile-sub-title><v-chip label outline class="caption teal"><v-icon>{{ searchResult.channel.icon }}</v-icon>&nbsp;{{ searchResult.channel.label }}</v-chip>&nbsp;<b>{{$store.getters.getUserById(searchResult.userId).nickname}}</b>: <i>"{{ searchResult.content }}"</i></v-list-tile-sub-title>
+                                                        <v-list-tile-sub-title><v-chip label outline dark class="caption teal teal--text"><v-icon>{{ searchResult.channel.icon }}</v-icon>&nbsp;{{ searchResult.channel.label }}</v-chip>&nbsp;<b>{{$store.getters.getUserById(searchResult.userId).nickname}}</b>: <i>"{{ searchResult.content }}"</i></v-list-tile-sub-title>
                                                     </v-list-tile-content>
                                                     <v-list-tile-action>
                                                         <v-list-tile-action-text>{{ searchResult.timestamp }}</v-list-tile-action-text>
@@ -88,7 +88,7 @@
                                 </v-card>
                             </v-flex>
                         </div>
-                        <v-flex sm8 offset-sm2 v-for="(poll, index) in polls">
+                        <v-flex sm8 offset-sm2 v-for="(poll, index) in polls" :key="poll.id">
                             <v-card>
                                 <v-card-media
                                     :src="poll.img"
@@ -105,7 +105,7 @@
                                                                 <v-avatar class="teal darken-4"><b>{{ choice.voters }}</b></v-avatar>
                                                                 {{ choice.label }}
                                                             </v-chip>
-                                                            <v-progress-linear height="20" v-model="choice.rate" :color-front="getRateColor(choice.rate, 1)" :color-back="getRateColor(choice.rate)"></v-progress-linear>
+                                                            <v-progress-linear height="20" v-model="choice.rate" :color="getRateColor(choice.rate, 1)" :background-color="getRateColor(choice.rate)"></v-progress-linear>
                                                         </p>
                                                     </template>
                                                 </v-flex>
@@ -151,7 +151,7 @@
                         <v-layout>
                             <v-flex sm8 offset-sm2>
                                 <v-card>
-                                    <v-toolbar class="teal darken-4" dark dense>
+                                    <v-toolbar class="teal darken-4" dense dark>
                                         <v-toolbar-title row>Compose</v-toolbar-title>
                                         <v-spacer></v-spacer>
                                         <scratch-typing></scratch-typing>
@@ -167,7 +167,7 @@
                                                     full-width
                                                     single-line
                                                     autofocus
-                                                    @keyup.native="checkInput"
+                                                    @keyup.enter="checkInput"
                                                     @input="typing">
                                                 </v-text-field>
                                             </v-flex>
@@ -487,10 +487,8 @@
           })
         }
       },
-      checkInput (e) {
-        if (e.keyCode === 13) {
-          this.sendMessage()
-        }
+      checkInput () {
+        this.sendMessage()
       },
       searchMessages (searchInput) {
         this.searchInput = searchInput
@@ -503,10 +501,15 @@
             if (!(this.searchResults.length > 0 && this.searchResults.length === res.total)) {
               this.searchResults = []
               res.documents.forEach(message => {
-                this.searchResults.push(Object.assign(message.content, {
-                  channel: this.$store.getters.getChannelById(message.content.channel),
-                  timestamp: window.moment(message.content.timestamp, 'x').fromNow()
-                }))
+                let originChannel = this.$store.getters.getChannelById(message.content.channel)
+                if (typeof originChannel !== 'undefined') {
+                  this.searchResults.push(Object.assign(message.content, {
+                    channel: originChannel,
+                    timestamp: window.moment(message.content.timestamp, 'x').fromNow()
+                  }))
+                } else {
+                  console.log('Could not find channel with id ' + message.content.channel)
+                }
               })
             }
           }
