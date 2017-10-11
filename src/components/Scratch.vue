@@ -77,6 +77,7 @@
                                                             <v-list-tile-sub-title v-html="message.subtitle"></v-list-tile-sub-title>
                                                         </v-list-tile-content>
                                                         <v-list-tile-action>
+                                                            <v-list-tile-action-text v-if="$store.state.channels.currentChannel.id === '#geo'" v-text="getDistance(message.location)"></v-list-tile-action-text>
                                                             <v-list-tile-action-text>{{ message.timestamp }}</v-list-tile-action-text>
                                                         </v-list-tile-action>
                                                     </v-list-tile>
@@ -123,6 +124,11 @@
                                 </v-card-actions>
                             </v-card>
                             <v-subheader></v-subheader>
+                        </v-flex>
+                        <v-flex sm8 offset-sm2 v-if="$store.state.channels.currentChannel.id === '#geo'">
+                            <v-card>
+                                <div id="geomap" style="height: 320px;"></div>
+                            </v-card>
                         </v-flex>
                         <v-flex sm8 offset-sm2 v-if="$router.history.current.name === 'scratch-polls'">
                             <v-btn outline raised block class="teal--text" @click="showCreatePollDialog = true">Create a new poll</v-btn>
@@ -221,7 +227,6 @@
         message: '',
         messages: [],
         polls: [],
-        showLoginDialog: false,
         dialogEmail: '',
         dialogPassword: '',
         searchInput: '',
@@ -234,11 +239,11 @@
         newPollImg: '',
         emojiHidden: true,
         userDetails: {},
-        showUserDetailsDialog: false
+        showUserDetailsDialog: false,
+        userLocation: {}
       }
     },
     computed: {
-      loginDialog: function () { return this.showLoginDialog },
       dark: function () { return this.$store.state.auth.user.darkTheme || false }
     },
     watch: {
@@ -251,6 +256,9 @@
           if (this.$store.state.channels.currentChannel.id !== channel.id) {
             this.$store.dispatch(SET_CURRENT_CHANNEL, channel)
             this.retrieveMessages()
+            if (channel.id === '#geo') {
+              this.initMap()
+            }
           }
         }
         window.scrollTo(0, 0)
@@ -276,6 +284,7 @@
     },
     mounted () {
       this.initializeUsers()
+      this.setUserLocation()
 
       let initScratch = function () {
         if (this.$route.name === 'scratch-channel') {
@@ -290,6 +299,9 @@
             })
             this.subscribeToMessages()
             this.retrieveMessages()
+            if (channel.id === '#geo') {
+              this.initMap()
+            }
           }.bind(this)
           setTimeout(initCurrentChannel, 200)
         } else if (this.$route.name === 'scratch-polls') {
@@ -388,12 +400,18 @@
         })
       },
       sendMessage () {
-        let message = new Document(window.kuzzle.collection('slack-messages', 'foo'), {
+        let messageContent = {
           userId: this.$store.state.auth.user.id,
           content: this.message,
           timestamp: Date.now(),
           channel: this.$store.state.channels.currentChannel.id
-        })
+        }
+
+        if (this.$store.state.channels.currentChannel.id === '#geo') {
+          messageContent.location = this.userLocation
+        }
+
+        let message = new Document(window.kuzzle.collection('slack-messages', 'foo'), messageContent)
 
         window.kuzzle.collection('slack-messages', 'foo').createDocument(message, (err, res) => {
           if (!err) {
@@ -467,7 +485,8 @@
           avatar: user.avatar,
           title: user.nickname,
           subtitle: message.content.content,
-          timestamp: window.moment(message.content.timestamp, 'x').fromNow()
+          timestamp: window.moment(message.content.timestamp, 'x').fromNow(),
+          location: message.content.location || null
         })
       },
       sendVote (poll, choiceIndex, choice) {
@@ -571,6 +590,64 @@
             users: [destinationUserId, this.$store.state.auth.user.id]
           }))
         }
+      },
+      setUserLocation () {
+        // let self = this
+
+        this.userLocation = {
+          lat: 43.608773,
+          lon: 3.879636
+        }
+
+        /* if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function (position) { self.userLocation = { lat: position.coords.latitude, lon: position.coords.longitude } })
+        } else {
+          // Kaliop Mtp
+          this.userLocation = {
+            lat: 43.603510,
+            lon: 3.920410
+          }
+        } */
+      },
+      getDistance (location) {
+        let radlat1 = Math.PI * this.userLocation.lat / 180
+        let radlat2 = Math.PI * location.lat / 180
+        let theta = this.userLocation.lon - location.lon
+        let radtheta = Math.PI * theta / 180
+        let dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta)
+        dist = Math.acos(dist)
+        dist = dist * 180 / Math.PI
+        dist = dist * 60 * 1.1515
+
+        return (dist * 1.609344).toFixed(2) + ' km'
+      },
+      initMap () {
+        let self = this
+
+        setTimeout(function () {
+          let geomap = window.L.map('geomap').setView([self.userLocation.lat, self.userLocation.lon], 13)
+          window.L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+            maxZoom: 18,
+            id: 'mapbox.streets',
+            accessToken: 'pk.eyJ1Ijoic2Ftbmlpc2FuIiwiYSI6ImNqOG4xcndhbzE1cWwycWxkZGFtMmg0cmYifQ.uIZbx6MNp-XBf_Z42G4_8g'
+          }).addTo(geomap)
+          window.L.circle([self.userLocation.lat, self.userLocation.lon], {
+            fillColor: '#009688',
+            fillOpacity: 0.5,
+            radius: 3000
+          }).addTo(geomap)
+          self.messages.forEach(m => {
+            let icon = window.L.divIcon({
+              className: 'avatar',
+              iconSize: [30, 30],
+              iconAnchor: [15, 15],
+              popupAnchor: [0, -15],
+              html: '<img src="' + m.avatar + '"/>' })
+            let marker = window.L.marker([m.location.lat, m.location.lon], { icon }).addTo(geomap)
+            marker.bindPopup('<b>' + m.title + '</b><br/>' + m.subtitle)
+          })
+        }, 500)
       }
     }
   }

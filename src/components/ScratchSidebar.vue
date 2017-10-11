@@ -7,13 +7,14 @@
             enable-resize-watcher
             v-model="show">
             <v-list>
+                <v-subheader v-if="$store.state.channels.channels.length > 0" class="mt-3 grey--text text--darken-1">CHANNELS</v-subheader>
                 <template v-for="channel in $store.state.channels.channels">
                     <transition name="slide-fade" mode="out-in" appear>
                         <v-list-tile :key="channel.id" ripple>
                             <v-list-tile-action>
                                 <v-badge color="red darken-1" :value="channel.unread">
                                     <span slot="badge" v-text="Number(channel.unread)"></span>
-                                    <v-icon :color="getChannelIcon(channel)">{{ channel.icon }}</v-icon>
+                                    <v-icon :color="channel.id === $store.getters.currentChannel.id ? 'teal' : 'gray'">{{ channel.icon }}</v-icon>
                                 </v-badge>
                             </v-list-tile-action>
                             <v-list-tile-content>
@@ -28,6 +29,20 @@
                     </v-list-tile-action>
                     <v-list-tile-title @click="showCreateChannelDialog = true" class="grey--text text--darken-1">Create a channel</v-list-tile-title>
                 </v-list-tile>
+                <v-subheader class="mt-3 grey--text text--darken-1">GEO-LOCALIZED CHANNEL</v-subheader>
+                <v-list>
+                    <v-list-tile ripple>
+                        <v-list-tile-action>
+                            <v-badge color="red darken-1" :value="$store.state.channels.geoChannel.unread">
+                                <span slot="badge" v-text="Number($store.state.channels.geoChannel.unread)"></span>
+                                <v-icon :color="$store.getters.currentChannel.id === '#geo' ? 'teal' : 'gray'">{{ $store.state.channels.geoChannel.icon }}</v-icon>
+                            </v-badge>
+                        </v-list-tile-action>
+                        <v-list-tile-content>
+                            <v-list-tile-title @click="$emit('channel-switch', $store.state.channels.geoChannel)">{{ $store.state.channels.geoChannel.label }}</v-list-tile-title>
+                        </v-list-tile-content>
+                    </v-list-tile>
+                </v-list>
                 <v-subheader v-if="$store.state.channels.privateChannels.length > 0" class="mt-3 grey--text text--darken-1">PRIVATE MESSAGES</v-subheader>
                 <v-list v-if="$store.state.channels.privateChannels.length > 0">
                     <template v-for="privateChannel in $store.state.channels.privateChannels">
@@ -355,9 +370,6 @@
         this.loading = false
         this.privateChatUsers = []
         this.newPrivateChannelTitle = ''
-      },
-      getChannelIcon (channel) {
-        return (channel.id === this.$store.getters.currentChannel.id ? 'teal--text text--lighten-2' : 'gray--text') + ' red--after'
       },
       getPrivateChannelAvatar (users) {
         if (users.length === 2) {

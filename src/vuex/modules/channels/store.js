@@ -10,9 +10,19 @@ import ScratchChannel from '../../../models/ScratchChannel'
 import actions from './actions'
 import * as getters from './getters'
 
+let geoChannel = ScratchChannel()
+geoChannel.id = '#geo'
+geoChannel.label = 'Geo channel'
+geoChannel.icon = 'location_on'
+geoChannel.type = 'geo'
+geoChannel.speaking = []
+geoChannel.typingMessage = ''
+geoChannel.users = []
+
 const state = {
   currentChannel: ScratchChannel(),
   channels: [],
+  geoChannel,
   privateChannels: []
 }
 
