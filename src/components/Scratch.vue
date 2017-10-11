@@ -74,7 +74,8 @@
                                                         </v-list-tile-avatar>
                                                         <v-list-tile-content>
                                                             <v-list-tile-title v-html="message.title" v-if="!message.same"></v-list-tile-title>
-                                                            <v-list-tile-sub-title v-html="message.subtitle"></v-list-tile-sub-title>
+                                                            <v-list-tile-sub-title v-if="highlightedGeoMessage === message.id" v-html="'<b>' + message.subtitle + '</b>'"></v-list-tile-sub-title>
+                                                            <v-list-tile-sub-title v-else v-html="message.subtitle"></v-list-tile-sub-title>
                                                         </v-list-tile-content>
                                                         <v-list-tile-action>
                                                             <v-list-tile-action-text v-if="$store.state.channels.currentChannel.id === '#geo'" v-text="getDistance(message.location)"></v-list-tile-action-text>
@@ -240,7 +241,10 @@
         emojiHidden: true,
         userDetails: {},
         showUserDetailsDialog: false,
-        userLocation: {}
+        userLocation: {},
+        geomap: null,
+        markerCluster: null,
+        highlightedGeoMessage: 0
       }
     },
     computed: {
@@ -480,14 +484,25 @@
       },
       pushMessage (message) {
         let user = this.$store.getters.getUserById(message.content.userId)
-
-        this.messages.push({
+        let messageContent = {
           avatar: user.avatar,
           title: user.nickname,
           subtitle: message.content.content,
           timestamp: window.moment(message.content.timestamp, 'x').fromNow(),
           location: message.content.location || null
-        })
+        }
+
+        this.messages.push(messageContent)
+
+        if (message.content.channel === '#geo') {
+          if (!this.geomap) {
+            setTimeout(function () {
+              this.addMarker(messageContent)
+            }.bind(this), 1000)
+          } else {
+            this.addMarker(messageContent)
+          }
+        }
       },
       sendVote (poll, choiceIndex, choice) {
         let choices = {}
@@ -595,8 +610,8 @@
         // let self = this
 
         this.userLocation = {
-          lat: 43.608773,
-          lon: 3.879636
+          lat: 43.605385,
+          lon: 3.889026
         }
 
         /* if (navigator.geolocation) {
@@ -625,29 +640,52 @@
         let self = this
 
         setTimeout(function () {
-          let geomap = window.L.map('geomap').setView([self.userLocation.lat, self.userLocation.lon], 13)
+          self.geomap = window.L.map('geomap').setView([self.userLocation.lat, self.userLocation.lon], 13)
           window.L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
-            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
             maxZoom: 18,
             id: 'mapbox.streets',
             accessToken: 'pk.eyJ1Ijoic2Ftbmlpc2FuIiwiYSI6ImNqOG4xcndhbzE1cWwycWxkZGFtMmg0cmYifQ.uIZbx6MNp-XBf_Z42G4_8g'
-          }).addTo(geomap)
+          }).addTo(self.geomap)
+
           window.L.circle([self.userLocation.lat, self.userLocation.lon], {
             fillColor: '#009688',
             fillOpacity: 0.5,
             radius: 3000
-          }).addTo(geomap)
-          self.messages.forEach(m => {
-            let icon = window.L.divIcon({
-              className: 'avatar',
-              iconSize: [30, 30],
-              iconAnchor: [15, 15],
-              popupAnchor: [0, -15],
-              html: '<img src="' + m.avatar + '"/>' })
-            let marker = window.L.marker([m.location.lat, m.location.lon], { icon }).addTo(geomap)
-            marker.bindPopup('<b>' + m.title + '</b><br/>' + m.subtitle)
-          })
+          }).addTo(self.geomap)
+
+          if (!self.markerCluster) {
+            self.markerCluster = window.L.markerClusterGroup()
+            self.geomap.addLayer(self.markerCluster)
+          } else {
+            self.markerCluster = window.L.markerClusterGroup()
+            self.messages.forEach(self.addMarker)
+            self.geomap.addLayer(self.markerCluster)
+          }
         }, 500)
+      },
+      addMarker (message) {
+        let self = this
+
+        let icon = window.L.divIcon({
+          className: 'avatar',
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
+          popupAnchor: [0, -15],
+          html: '<img src="' + message.avatar + '"/>'
+        })
+
+        let marker = window.L.marker([message.location.lat, message.location.lon], { icon }).addTo(this.geomap)
+        marker
+          .on('mouseover', function (message) {
+            self.highlightedGeoMessage = message.id
+            return false
+          })
+          .on('mouseout', function () {
+            self.highlightedGeoMessage = 0
+            return false
+          })
+        marker.bindPopup('<b>' + message.title + '</b><br/>' + message.subtitle).openPopup()
+        this.markerCluster.addLayer(marker)
       }
     }
   }
