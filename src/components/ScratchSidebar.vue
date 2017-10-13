@@ -48,15 +48,15 @@
                     <template v-for="privateChannel in $store.state.channels.privateChannels">
                         <transition name="slide-fade" mode="out-in" appear>
                             <v-list-tile :key="privateChannel.id" ripple avatar>
-                                <v-list-tile-avatar class="grey--text red--after">
-                                    <img :src="getPrivateChannelAvatar(privateChannel.users)" alt="">
-                                </v-list-tile-avatar>
+                                <v-badge left color="red darken-1" overlap :value="privateChannel.unread">
+                                    <span slot="badge" v-text="Number(privateChannel.unread)"></span>
+                                    <v-list-tile-avatar class="grey--text red--after">
+                                        <img :src="getPrivateChannelAvatar(privateChannel.users)" alt="">
+                                    </v-list-tile-avatar>
+                                </v-badge>
                                 <v-list-tile-content v-text="getPrivateChannelLabel(privateChannel)" @click="$emit('channel-switch', privateChannel)"></v-list-tile-content>
                                 <v-list-tile-action>
-                                    <v-badge left color="red darken-1" :value="privateChannel.unread">
-                                        <span slot="badge" v-text="Number(privateChannel.unread)"></span>
-                                        <v-icon :color="privateChannel.unread > 0 ? 'teal' : ''">chat_bubble</v-icon>
-                                    </v-badge>
+                                    <v-icon :color="privateChannel.id === $store.getters.currentChannel.id ? 'teal' : 'gray'">chat_bubble</v-icon>
                                 </v-list-tile-action>
                             </v-list-tile>
                         </transition>
@@ -112,7 +112,7 @@
                 </v-card-text>
             </v-card>
             <v-list>
-                <v-list-tile v-for="user in $store.getters.users" :key="user.id" ripple avatar v-if="user.id !== $store.state.auth.user.id">
+                <v-list-tile v-for="user in $store.getters.usersMinusSelf" :key="user.id" ripple avatar>
                     <v-list-tile-avatar class="grey--text red--after">
                         <img :src="user.avatar" alt="">
                     </v-list-tile-avatar>
@@ -217,7 +217,7 @@
                 <v-card-text>
                     <v-text-field label="Private channel label" v-model="newPrivateChannelTitle" required></v-text-field>
                     <v-select
-                        v-bind:items="$store.getters.users"
+                        v-bind:items="$store.getters.usersMinusSelf"
                         v-model="privateChatUsers"
                         label="Users"
                         multiple

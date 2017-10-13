@@ -69,16 +69,21 @@
                                                 <div :key="index">
                                                     <v-subheader v-if="message.header" v-text="message.header"></v-subheader>
                                                     <v-list-tile avatar v-else v-bind:key="message.title">
+                                                        <transition name="slide-fade-left" mode="out-in" appear>
+                                                            <v-list-tile-action v-if="highlightedGeoMessage === message.id">
+                                                                <v-icon color="teal">location_on</v-icon>
+                                                            </v-list-tile-action>
+                                                        </transition>
                                                         <v-list-tile-avatar>
                                                             <img v-bind:src="message.avatar">
                                                         </v-list-tile-avatar>
                                                         <v-list-tile-content>
                                                             <v-list-tile-title v-html="message.title" v-if="!message.same"></v-list-tile-title>
-                                                            <v-list-tile-sub-title v-if="highlightedGeoMessage === message.id" v-html="'<b>' + message.subtitle + '</b>'"></v-list-tile-sub-title>
+                                                            <v-list-tile-sub-title v-if="highlightedGeoMessage === message.id" v-text="message.subtitle" class="subheading teal--text"></v-list-tile-sub-title>
                                                             <v-list-tile-sub-title v-else v-html="message.subtitle"></v-list-tile-sub-title>
                                                         </v-list-tile-content>
                                                         <v-list-tile-action>
-                                                            <v-list-tile-action-text v-if="$store.state.channels.currentChannel.id === '#geo'" v-text="getDistance(message.location)"></v-list-tile-action-text>
+                                                            <v-list-tile-action-text v-if="$store.state.channels.currentChannel.id === '#geo'" :class="getGeoDistanceColor(message.location)" v-text="getDistance(message.location) + ' km'"></v-list-tile-action-text>
                                                             <v-list-tile-action-text>{{ message.timestamp }}</v-list-tile-action-text>
                                                         </v-list-tile-action>
                                                     </v-list-tile>
@@ -127,7 +132,7 @@
                             <v-subheader></v-subheader>
                         </v-flex>
                         <v-flex sm8 offset-sm2 v-if="$store.state.channels.currentChannel.id === '#geo'">
-                            <v-card>
+                            <v-card style="z-index: 190;">
                                 <div id="geomap" style="height: 320px;"></div>
                             </v-card>
                         </v-flex>
@@ -303,9 +308,6 @@
             })
             this.subscribeToMessages()
             this.retrieveMessages()
-            if (channel.id === '#geo') {
-              this.initMap()
-            }
           }.bind(this)
           setTimeout(initCurrentChannel, 200)
         } else if (this.$route.name === 'scratch-polls') {
@@ -485,6 +487,7 @@
       pushMessage (message) {
         let user = this.$store.getters.getUserById(message.content.userId)
         let messageContent = {
+          id: message.id,
           avatar: user.avatar,
           title: user.nickname,
           subtitle: message.content.content,
@@ -569,9 +572,7 @@
           { r: 20, c: 'amber' },
           { r: 10, c: 'orange' },
           { r: 0, c: 'deep-orange' }
-        ].find(e => {
-          return rate >= e.r
-        }).c + ' ' + (front ? 'darken-2' : 'lighten-3')
+        ].find(e => rate >= e.r).c + ' ' + (front ? 'darken-2' : 'lighten-3')
       },
       imgToBase64 () {
         let file = document.querySelector('input[type=file]').files[0]
@@ -607,22 +608,32 @@
         }
       },
       setUserLocation () {
-        // let self = this
+        let self = this
 
-        this.userLocation = {
+        /* this.userLocation = {
           lat: 43.605385,
           lon: 3.889026
-        }
-
-        /* if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(function (position) { self.userLocation = { lat: position.coords.latitude, lon: position.coords.longitude } })
-        } else {
-          // Kaliop Mtp
-          this.userLocation = {
-            lat: 43.603510,
-            lon: 3.920410
-          }
         } */
+
+        try {
+          if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(function (position) {
+              self.userLocation = {
+                lat: position.coords.latitude,
+                lon: position.coords.longitude
+              }
+              self.initMap()
+            })
+          } else {
+            // Kaliop Mtp
+            this.userLocation = {
+              lat: 43.603510,
+              lon: 3.920410
+            }
+          }
+        } catch (e) {
+          console.log(e)
+        }
       },
       getDistance (location) {
         let radlat1 = Math.PI * this.userLocation.lat / 180
@@ -634,34 +645,40 @@
         dist = dist * 180 / Math.PI
         dist = dist * 60 * 1.1515
 
-        return (dist * 1.609344).toFixed(2) + ' km'
+        return (dist * 1.609344).toFixed(2)
       },
       initMap () {
         let self = this
 
         setTimeout(function () {
-          self.geomap = window.L.map('geomap').setView([self.userLocation.lat, self.userLocation.lon], 13)
-          window.L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
-            maxZoom: 18,
-            id: 'mapbox.streets',
-            accessToken: 'pk.eyJ1Ijoic2Ftbmlpc2FuIiwiYSI6ImNqOG4xcndhbzE1cWwycWxkZGFtMmg0cmYifQ.uIZbx6MNp-XBf_Z42G4_8g'
-          }).addTo(self.geomap)
+          if (self.$store.getters.currentChannel.id === '#geo') {
+            if (self.geomap) {
+              self.geomap.remove()
+            }
 
-          window.L.circle([self.userLocation.lat, self.userLocation.lon], {
-            fillColor: '#009688',
-            fillOpacity: 0.5,
-            radius: 3000
-          }).addTo(self.geomap)
+            self.geomap = window.L.map('geomap').setView([self.userLocation.lat, self.userLocation.lon], 13)
+            window.L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+              maxZoom: 18,
+              id: 'mapbox.streets',
+              accessToken: 'pk.eyJ1Ijoic2Ftbmlpc2FuIiwiYSI6ImNqOG4xcndhbzE1cWwycWxkZGFtMmg0cmYifQ.uIZbx6MNp-XBf_Z42G4_8g'
+            }).addTo(self.geomap)
 
-          if (!self.markerCluster) {
-            self.markerCluster = window.L.markerClusterGroup()
-            self.geomap.addLayer(self.markerCluster)
-          } else {
-            self.markerCluster = window.L.markerClusterGroup()
-            self.messages.forEach(self.addMarker)
-            self.geomap.addLayer(self.markerCluster)
+            window.L.circle([self.userLocation.lat, self.userLocation.lon], {
+              fillColor: '#009688',
+              fillOpacity: 0.5,
+              radius: 3000
+            }).addTo(self.geomap)
+
+            if (!self.markerCluster) {
+              self.markerCluster = window.L.markerClusterGroup()
+              self.geomap.addLayer(self.markerCluster)
+            } else {
+              self.markerCluster = window.L.markerClusterGroup()
+              self.messages.forEach(self.addMarker)
+              self.geomap.addLayer(self.markerCluster)
+            }
           }
-        }, 500)
+        }, 1000)
       },
       addMarker (message) {
         let self = this
@@ -675,17 +692,31 @@
         })
 
         let marker = window.L.marker([message.location.lat, message.location.lon], { icon }).addTo(this.geomap)
+        marker.messageId = message.id
         marker
-          .on('mouseover', function (message) {
-            self.highlightedGeoMessage = message.id
-            return false
+          .on('mouseover', function () {
+            self.highlightedGeoMessage = this.messageId
           })
           .on('mouseout', function () {
             self.highlightedGeoMessage = 0
-            return false
           })
-        marker.bindPopup('<b>' + message.title + '</b><br/>' + message.subtitle).openPopup()
+
+        let popup = window.L.popup({ autoPan: false }).setContent('<b>' + message.title + '</b><br/>' + message.subtitle)
+
+        marker.bindPopup(popup).openPopup()
         this.markerCluster.addLayer(marker)
+      },
+      getGeoDistanceColor (location) {
+        let color = 'subheading teal--text'
+        let distance = this.getDistance(location)
+
+        return color + [
+          { d: 1.5, a: ' text--lighten-4' },
+          { d: 1, a: ' text--lighten-3' },
+          { d: 0.5, a: ' text--lighten-2' },
+          { d: 0.1, a: ' text--lighten-1' },
+          { d: 0, a: '' }
+        ].find(e => distance >= e.d).a
       }
     }
   }
@@ -702,5 +733,16 @@
     /* .slide-fade-leave-active for <2.1.8 */ {
     transform: translateY(100px);
     opacity: 0;
+  }
+  .slide-fade-left-enter-active {
+      transition: all .2s ease;
+  }
+  .slide-fade-left-leave-active {
+      transition: all .2s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+  }
+  .slide-fade-left-enter, .slide-fade-left-leave-to
+      /* .slide-fade-leave-active for <2.1.8 */ {
+      transform: translateX(-100px);
+      opacity: 0;
   }
 </style>

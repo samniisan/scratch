@@ -2,6 +2,10 @@ export const users = state => {
   return state.users
 }
 
+export const usersMinusSelf = (state, getters, rootState) => {
+  return state.users.filter(u => u.id !== rootState.auth.user.id)
+}
+
 export const getUserById = (state, getters) => (id) => {
   let user = state.users.filter(user => user.id === id)[0]
 
