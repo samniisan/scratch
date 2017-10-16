@@ -10,7 +10,7 @@
                 <v-subheader v-if="$store.state.channels.channels.length > 0" class="mt-3 grey--text text--darken-1">CHANNELS</v-subheader>
                 <template v-for="channel in $store.state.channels.channels">
                     <transition name="slide-fade" mode="out-in" appear>
-                        <v-list-tile :key="channel.id" ripple>
+                        <v-list-tile :key="channel.id" ripple @click="$emit('channel-switch', channel)">
                             <v-list-tile-action>
                                 <v-badge color="red darken-1" :value="channel.unread">
                                     <span slot="badge" v-text="Number(channel.unread)"></span>
@@ -18,20 +18,20 @@
                                 </v-badge>
                             </v-list-tile-action>
                             <v-list-tile-content>
-                                <v-list-tile-title @click="$emit('channel-switch', channel)">{{ channel.label }}</v-list-tile-title>
+                                <v-list-tile-title>{{ channel.label }}</v-list-tile-title>
                             </v-list-tile-content>
                         </v-list-tile>
                     </transition>
                 </template>
-                <v-list-tile class="mt-3">
+                <v-list-tile class="mt-3" ripple @click="showCreateChannelDialog = true">
                     <v-list-tile-action>
                         <v-icon class="grey--text text--darken-1">add_circle_outline</v-icon>
                     </v-list-tile-action>
-                    <v-list-tile-title @click="showCreateChannelDialog = true" class="grey--text text--darken-1">Create a channel</v-list-tile-title>
+                    <v-list-tile-title class="grey--text text--darken-1">Create a channel</v-list-tile-title>
                 </v-list-tile>
                 <v-subheader class="mt-3 grey--text text--darken-1">GEO-LOCALIZED CHANNEL</v-subheader>
                 <v-list>
-                    <v-list-tile ripple>
+                    <v-list-tile ripple @click="$emit('channel-switch', $store.state.channels.geoChannel)">
                         <v-list-tile-action>
                             <v-badge color="red darken-1" :value="$store.state.channels.geoChannel.unread">
                                 <span slot="badge" v-text="Number($store.state.channels.geoChannel.unread)"></span>
@@ -39,7 +39,7 @@
                             </v-badge>
                         </v-list-tile-action>
                         <v-list-tile-content>
-                            <v-list-tile-title @click="$emit('channel-switch', $store.state.channels.geoChannel)">{{ $store.state.channels.geoChannel.label }}</v-list-tile-title>
+                            <v-list-tile-title>{{ $store.state.channels.geoChannel.label }}</v-list-tile-title>
                         </v-list-tile-content>
                     </v-list-tile>
                 </v-list>
@@ -47,14 +47,14 @@
                 <v-list v-if="$store.state.channels.privateChannels.length > 0">
                     <template v-for="privateChannel in $store.state.channels.privateChannels">
                         <transition name="slide-fade" mode="out-in" appear>
-                            <v-list-tile :key="privateChannel.id" ripple avatar>
+                            <v-list-tile :key="privateChannel.id" ripple avatar @click="$emit('channel-switch', privateChannel)">
                                 <v-badge left color="red darken-1" overlap :value="privateChannel.unread">
                                     <span slot="badge" v-text="Number(privateChannel.unread)"></span>
                                     <v-list-tile-avatar class="grey--text red--after">
                                         <img :src="getPrivateChannelAvatar(privateChannel.users)" alt="">
                                     </v-list-tile-avatar>
                                 </v-badge>
-                                <v-list-tile-content v-text="getPrivateChannelLabel(privateChannel)" @click="$emit('channel-switch', privateChannel)"></v-list-tile-content>
+                                <v-list-tile-content v-text="getPrivateChannelLabel(privateChannel)"></v-list-tile-content>
                                 <v-list-tile-action>
                                     <v-icon :color="privateChannel.id === $store.getters.currentChannel.id ? 'teal' : 'gray'">chat_bubble</v-icon>
                                 </v-list-tile-action>
@@ -62,29 +62,29 @@
                         </transition>
                     </template>
                 </v-list>
-                <v-list-tile class="mt-3">
+                <v-list-tile class="mt-3" ripple @click="showCreatePrivateChannelDialog = true">
                     <v-list-tile-action>
                         <v-icon class="grey--text text--darken-1">add_circle_outline</v-icon>
                     </v-list-tile-action>
-                    <v-list-tile-title @click="showCreatePrivateChannelDialog = true" class="grey--text text--darken-1">Start a conversation</v-list-tile-title>
+                    <v-list-tile-title class="grey--text text--darken-1">Start a conversation</v-list-tile-title>
                 </v-list-tile>
-                <v-list-tile class="mt-3">
+                <v-list-tile class="mt-3" ripple @click="$emit('poll-view')">
                     <v-list-tile-action>
                         <v-icon class="grey--text text--darken-1">poll</v-icon>
                     </v-list-tile-action>
-                    <v-list-tile-title @click="$emit('poll-view')" class="grey--text text--darken-1">Polls</v-list-tile-title>
+                    <v-list-tile-title class="grey--text text--darken-1">Polls</v-list-tile-title>
                 </v-list-tile>
-                <v-list-tile>
+                <v-list-tile ripple @click="account">
                     <v-list-tile-action>
                         <v-icon class="grey--text text--darken-1">settings</v-icon>
                     </v-list-tile-action>
-                    <v-list-tile-title class="grey--text text--darken-1" @click="account">Settings</v-list-tile-title>
+                    <v-list-tile-title class="grey--text text--darken-1">Settings</v-list-tile-title>
                 </v-list-tile>
-                <v-list-tile>
+                <v-list-tile ripple @click="$emit('logout')">
                     <v-list-tile-action>
                         <v-icon class="grey--text text--darken-1">exit_to_app</v-icon>
                     </v-list-tile-action>
-                    <v-list-tile-title class="grey--text text--darken-1" @click="$emit('logout')">Logout</v-list-tile-title>
+                    <v-list-tile-title class="grey--text text--darken-1">Logout</v-list-tile-title>
                 </v-list-tile>
             </v-list>
         </v-navigation-drawer>
@@ -127,14 +127,14 @@
                                 <v-icon class="grey--text text--lighten-1">menu</v-icon>
                             </v-btn>
                             <v-list>
-                                <v-list-tile>
-                                    <v-list-tile-title @click="$emit('show-user-details', user.id)">Show details</v-list-tile-title>
+                                <v-list-tile @click="$emit('show-user-details', user.id)">
+                                    <v-list-tile-title>Show details</v-list-tile-title>
                                 </v-list-tile>
-                                <v-list-tile>
-                                    <v-list-tile-title @click="$emit('start-one-to-one', user.id)">Start a conversation</v-list-tile-title>
+                                <v-list-tile @click="$emit('start-one-to-one', user.id)">
+                                    <v-list-tile-title>Start a conversation</v-list-tile-title>
                                 </v-list-tile>
-                                <v-list-tile>
-                                    <v-list-tile-title @click="$emit('bump', user.id)">Bump</v-list-tile-title>
+                                <v-list-tile @click="$emit('bump', user.id)">
+                                    <v-list-tile-title>Bump</v-list-tile-title>
                                 </v-list-tile>
                             </v-list>
                         </v-menu>

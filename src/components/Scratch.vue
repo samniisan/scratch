@@ -608,14 +608,15 @@
         }
       },
       setUserLocation () {
-        let self = this
+        // let self = this
 
-        /* this.userLocation = {
-          lat: 43.605385,
-          lon: 3.889026
-        } */
+        this.userLocation = {
+          lat: 43.607436,
+          lon: 3.912948
+        }
+        this.initMap()
 
-        try {
+        /* try {
           if (navigator.geolocation) {
             navigator.geolocation.watchPosition(function (position) {
               self.userLocation = {
@@ -633,7 +634,7 @@
           }
         } catch (e) {
           console.log(e)
-        }
+        } */
       },
       getDistance (location) {
         let radlat1 = Math.PI * this.userLocation.lat / 180
