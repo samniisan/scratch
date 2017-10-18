@@ -4,6 +4,8 @@ export default () => {
     nickname: undefined,
     avatar: undefined,
     ido: undefined,
-    darkTheme: undefined
+    darkTheme: undefined,
+    localized: undefined,
+    lastActive: undefined
   }
 }

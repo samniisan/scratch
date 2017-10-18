@@ -12,6 +12,8 @@ export default {
       user.nickname = userData.content.nickname
       user.avatar = userData.content.avatar
       user.ido = userData.content.ido
+      user.status = userData.content.status || false
+      user.lastActive = userData.content.lastActive || 0
 
       users.push(user)
     })
@@ -25,6 +27,8 @@ export default {
     user.nickname = data.content.nickname
     user.avatar = data.content.avatar
     user.ido = data.content.ido
+    user.status = data.content.status || false
+    user.lastActive = data.content.lastActive || 0
 
     commit(types.ADD_TO_USERS, user)
   },
@@ -35,6 +39,8 @@ export default {
     user.nickname = data.content.nickname
     user.avatar = data.content.avatar
     user.ido = data.content.ido
+    user.status = data.content.status || false
+    user.lastActive = data.content.lastActive || 0
 
     commit(types.UPDATE_USER, user)
   },

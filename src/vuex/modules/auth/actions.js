@@ -9,12 +9,13 @@ let saveUser = function (res, commit) {
   localStorage.setItem('jwtToken', res.jwt)
   window.kuzzle.setJwtToken(res.jwt)
 
-  return window.kuzzle.collection('slack-users', 'foo').fetchDocument(user.id, (err, KuzzleUser) => {
+  return window.kuzzle.collection(window.Scratch.SCRATCH_USERS_COLLECTION, window.Scratch.SCRATCH_INDEX).fetchDocument(user.id, (err, KuzzleUser) => {
     if (!err) {
       user.nickname = KuzzleUser.content.nickname
       user.avatar = KuzzleUser.content.avatar
       user.ido = KuzzleUser.content.ido
       user.darkTheme = KuzzleUser.content.darkTheme || false
+      user.localized = false
 
       localStorage.setItem('user', JSON.stringify(user))
 
@@ -71,5 +72,8 @@ export default {
         })
       }
     })
+  },
+  [types.UPDATE_CURRENT_USER] ({commit}, data) {
+    commit(types.UPDATE_CURRENT_USER, data)
   }
 }

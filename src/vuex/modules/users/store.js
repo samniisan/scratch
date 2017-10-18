@@ -1,3 +1,4 @@
+import Vue from 'vue'
 import {
   SET_USERS,
   ADD_TO_USERS,
@@ -19,7 +20,11 @@ export const mutations = {
     state.users.push(user)
   },
   [UPDATE_USER] (state, user) {
-    state.users[state.users.indexOf(getters.getUserById(state)(user.id))] = user
+    let userIndex = state.users.indexOf(getters.getUserById(state)(user.id))
+
+    Object.keys(user).forEach(function (v, i) {
+      Vue.set(state.users[userIndex], v, user[v])
+    })
   },
   [DELETE_USER] (state, userId) {
     let user = getters.getUserById(state)(userId)

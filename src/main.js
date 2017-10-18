@@ -36,6 +36,15 @@ router.beforeEach((to, from, next) => {
 Vue.use(Vuetify)
 
 Vue.config.productionTip = false
+window.Scratch = {
+  SCRATCH_INDEX: process.env.SCRATCH_INDEX,
+  SCRATCH_USERS_COLLECTION: process.env.SCRATCH_USERS_COLLECTION,
+  SCRATCH_MESSAGES_COLLECTION: process.env.SCRATCH_MESSAGES_COLLECTION,
+  SCRATCH_CHANNEL_COLLECTION: process.env.SCRATCH_CHANNEL_COLLECTION,
+  SCRATCH_POLL_COLLECTION: process.env.SCRATCH_POLL_COLLECTION,
+  MAPBOX_ACCESS_TOKEN: process.env.MAPBOX_ACCESS_TOKEN,
+  GIPHY_API_KEY: process.env.GIPHY_API_KEY
+}
 
 Vue.component('picker', Picker)
 Vue.component('emoji', Emoji)

@@ -29,7 +29,8 @@
                                         </v-card-title>
                                         <v-card-text>
                                             <v-text-field label="Nickname" required v-model="accountNickname"></v-text-field>
-                                            <v-text-field label="What I do" required v-model="accountIDo"></v-text-field>
+                                            <v-text-field label="What I do" v-model="accountIDo"></v-text-field>
+                                            <v-text-field label="Avatar URL" required v-model="accountAvatar"></v-text-field>
                                             <small>*indicates required field</small>
                                         </v-card-text>
                                         <v-card-actions>
@@ -112,12 +113,16 @@
       accountSave () {
         this.accountLoading = true
 
-        window.kuzzle.collection('slack-users', 'foo').updateDocument(this.$store.state.auth.user.id, {
+        window.kuzzle.collection(window.Scratch.SCRATCH_USERS_COLLECTION, window.Scratch.SCRATCH_INDEX).updateDocument(this.$store.state.auth.user.id, {
           ido: this.accountIDo,
-          nickname: this.accountNickname
+          nickname: this.accountNickname,
+          avatar: this.accountAvatar
         }, (err, res) => {
           if (!err) {
-            let updatedUser = Object.assign({ id: this.$store.state.auth.user.id }, res.content)
+            let updatedUser = Object.assign({
+              id: this.$store.state.auth.user.id,
+              localized: this.$store.state.auth.user.localized
+            }, res.content)
 
             localStorage.setItem('user', JSON.stringify(updatedUser))
             this.$store.commit(SET_CURRENT_USER, updatedUser)
@@ -135,11 +140,14 @@
         this.settingsLoading = true
 
         if (this.$refs.form.validate()) {
-          window.kuzzle.collection('slack-users', 'foo').updateDocument(this.$store.state.auth.user.id, {
+          window.kuzzle.collection(window.Scratch.SCRATCH_USERS_COLLECTION, window.Scratch.SCRATCH_INDEX).updateDocument(this.$store.state.auth.user.id, {
             darkTheme: this.settingsDarkTheme
           }, (err, res) => {
             if (!err) {
-              let updatedUser = Object.assign({ id: this.$store.state.auth.user.id }, res.content)
+              let updatedUser = Object.assign({
+                id: this.$store.state.auth.user.id,
+                localized: this.$store.state.auth.user.localized
+              }, res.content)
 
               localStorage.setItem('user', JSON.stringify(updatedUser))
               this.$store.commit(SET_CURRENT_USER, updatedUser)

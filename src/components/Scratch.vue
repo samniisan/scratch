@@ -20,7 +20,7 @@
                 class="black--text">
                 <kbd>{{ bumper.user.nickname }} bumped you</kbd>&nbsp;<template v-if="bumper.back">back</template>!
                 <v-btn flat class="pink--text" @click.native="bump(bumper.user.id, 1); bumpSnackbar = false;">Bump back!</v-btn>
-                <v-btn flat @click.native="bumpSnackbar = false" class="black--text">Close</v-btn>
+                <v-btn flat @click.native="bumpSnackbar = false" class="white--text">Close</v-btn>
             </v-snackbar>
         </transition>
         <main>
@@ -31,36 +31,6 @@
                             <transition name="slide-fade" mode="out-in" appear>
                                 <router-view></router-view>
                             </transition>
-                            <transition name="slide-fade" mode="out-in" appear>
-                                <v-flex sm8 offset-sm2 v-if="searchResults.length > 0 && searchInput.length > 0">
-                                    <v-card>
-                                        <v-card-title primary-title>
-                                            <div>
-                                                <div class="headline">Search in messages</div>
-                                                <span class="grey--text"><pre><v-icon>search</v-icon>{{ searchResults.length }} result(s)</pre></span>
-                                            </div>
-                                        </v-card-title>
-                                        <v-list>
-                                            <template v-for="searchResult in searchResults">
-                                                <transition name="slide-fade" mode="out-in">
-                                                <v-list-tile avatar>
-                                                    <v-list-tile-avatar>
-                                                        <img v-bind:src="$store.getters.getUserById(searchResult.userId).avatar">
-                                                    </v-list-tile-avatar>
-                                                    <v-list-tile-content>
-                                                        <v-list-tile-sub-title><v-chip label outline dark class="caption teal teal--text"><v-icon>{{ searchResult.channel.icon }}</v-icon>&nbsp;{{ searchResult.channel.label }}</v-chip>&nbsp;<b>{{$store.getters.getUserById(searchResult.userId).nickname}}</b>: <i>"{{ searchResult.content }}"</i></v-list-tile-sub-title>
-                                                    </v-list-tile-content>
-                                                    <v-list-tile-action>
-                                                        <v-list-tile-action-text>{{ searchResult.timestamp }}</v-list-tile-action-text>
-                                                    </v-list-tile-action>
-                                                </v-list-tile>
-                                                </transition>
-                                            </template>
-                                        </v-list>
-                                    </v-card>
-                                </v-flex>
-                            </transition>
-                            <v-subheader v-if="searchResults.length > 0 && searchInput.length > 0"></v-subheader>
                             <v-flex sm8 offset-sm2 v-if="messages.length > 0">
                                 <v-card>
                                     <v-list two-line>
@@ -138,10 +108,10 @@
                         </v-flex>
                         <v-flex sm8 offset-sm2 v-if="$router.history.current.name === 'scratch-polls'">
                             <v-btn outline raised block class="teal--text" @click="showCreatePollDialog = true">Create a new poll</v-btn>
-                            <v-dialog v-model="showCreatePollDialog" persistent width="60%">
+                            <v-dialog v-model="showCreatePollDialog" persistent max-width="60%">
                                 <v-card>
-                                    <v-card-title>
-                                        <span class="headline">New poll</span>
+                                    <v-card-title class="teal">
+                                        <span class="headline white--text">New poll</span>
                                     </v-card-title>
                                     <v-card-text>
                                         <input type="file" v-on:change="imgToBase64"/>
@@ -163,27 +133,23 @@
                         <v-layout>
                             <v-flex sm8 offset-sm2>
                                 <v-card>
-                                    <v-toolbar class="teal darken-4" dense dark>
+                                    <v-toolbar flat class="teal darken-4" dense dark>
                                         <v-toolbar-title row>Compose</v-toolbar-title>
                                         <v-spacer></v-spacer>
                                         <scratch-typing></scratch-typing>
-                                        <v-icon class="white--text" @click="emojiHidden = !emojiHidden">face</v-icon>&nbsp;
-                                        <v-icon class="white--text" @click="sendMessage">send</v-icon>
+                                        <v-icon style="cursor:pointer;" class="white--text" @click="giphyDialog" title="Add gif">gif</v-icon>&nbsp;
+                                        <v-icon style="cursor:pointer;" class="white--text" @click="emojiHidden = !emojiHidden" title="Add emoji">face</v-icon>&nbsp;
+                                        <v-icon style="cursor:pointer;" class="white--text" @click="sendMessage" title="Send">send</v-icon>
                                     </v-toolbar>
-                                    <v-container fluid class="pa-0">
-                                        <v-layout wrap>
-                                            <v-flex xs12>
-                                                <v-divider></v-divider>
-                                                <v-text-field
-                                                    v-model="message"
-                                                    full-width
-                                                    single-line
-                                                    autofocus
-                                                    @keyup.enter="checkInput"
-                                                    @input="typing">
-                                                </v-text-field>
-                                            </v-flex>
-                                        </v-layout>
+                                    <v-container class="pa-0">
+                                        <v-text-field
+                                            v-model="message"
+                                            full-width
+                                            single-line
+                                            autofocus
+                                            @keyup.enter="checkInput"
+                                            @input="typing">
+                                        </v-text-field>
                                     </v-container>
                                 </v-card>
                             </v-flex>
@@ -196,7 +162,7 @@
                     </v-container>
                 </span>
             </v-container>
-            <v-dialog v-model="showUserDetailsDialog" lazy>
+            <v-dialog v-model="showUserDetailsDialog">
                 <v-card v-if="typeof userDetails.id !== 'undefined'">
                     <v-card-media :src="userDetails.avatar" height="200px"></v-card-media>
                     <v-card-title primary-title>
@@ -207,11 +173,83 @@
                     </v-card-title>
                     <v-card-text v-if="userDetails.ido !== ''" class="subheading"><blockquote><i>"{{ userDetails.ido }}"</i></blockquote></v-card-text>
                     <v-card-actions>
-                        <v-btn block class="green--text darken-1" flat="flat" @click.native="showUserDetailsDialog = false; startOneToOnePrivateChannel(userDetails.id)">Chat<v-icon right dark>chat</v-icon></v-btn>
-                        <v-btn block class="pink--text darken-1" flat="flat" @click.native="showUserDetailsDialog = false; bump(userDetails.id, false)">Bump!<v-icon right dark>notifications_active</v-icon></v-btn>
+                        <v-btn block class="green--text darken-1" flat @click.native="showUserDetailsDialog = false; startOneToOnePrivateChannel(userDetails.id)">Chat<v-icon right dark>chat</v-icon></v-btn>
+                        <v-btn block class="pink--text darken-1" flat @click.native="showUserDetailsDialog = false; bump(userDetails.id, false)">Bump!<v-icon right dark>notifications_active</v-icon></v-btn>
                     </v-card-actions>
                 </v-card>
             </v-dialog>
+            <v-dialog v-model="showGiphyDialog" max-width="40%">
+                <v-card>
+                    <v-card-media :src="randomGiphy" height="200px"></v-card-media>
+                    <v-card-title>
+                        <v-container fluid grid-list-md>
+                            <v-layout row wrap>
+                                <v-flex xs2>
+                                    <v-subheader>Search a gif</v-subheader>
+                                </v-flex>
+                                <v-flex xs10>
+                                    <v-text-field
+                                        light
+                                        v-model="giphyInput"
+                                        @input="searchGiphy"
+                                        prepend-icon="search">
+                                    </v-text-field>
+                                </v-flex>
+                            </v-layout>
+                        </v-container>
+                    </v-card-title>
+                    <v-card-text>
+                        <v-container fluid grid-list-xs>
+                            <v-layout row wrap>
+                                <v-flex
+                                    xs4
+                                    v-for="g in giphies"
+                                    :key="g">
+                                    <v-card flat tile>
+                                        <v-card-media
+                                            :src="g"
+                                            height="150px">
+                                        </v-card-media>
+                                    </v-card>
+                                </v-flex>
+                            </v-layout>
+                        </v-container>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-btn block class="green--text" flat @click.native="showGiphyDialog = false; sendGiphy">Send</v-btn>
+                        <v-btn block class="orange--text" flat @click.native="showGiphyDialog = false">Nevermind</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+            <v-bottom-sheet v-model="showSearchResults" scrollable>
+                <v-card>
+                    <v-card-title primary-title>
+                        <div>
+                            <div class="headline">Search in messages</div>
+                            <span class="grey--text"><pre><v-icon>search</v-icon>{{ searchResults.length }} result(s)</pre></span>
+                        </div>
+                    </v-card-title>
+                    <v-card-text>
+                        <v-list>
+                            <template v-for="searchResult in searchResults">
+                                <transition name="slide-fade" mode="out-in">
+                                    <v-list-tile avatar>
+                                        <v-list-tile-avatar>
+                                            <img v-bind:src="$store.getters.getUserById(searchResult.userId).avatar">
+                                        </v-list-tile-avatar>
+                                        <v-list-tile-content>
+                                            <v-list-tile-sub-title><v-chip label outline dark class="caption teal teal--text"><v-icon>{{ searchResult.channel.icon }}</v-icon>&nbsp;{{ searchResult.channel.label }}</v-chip>&nbsp;<b>{{$store.getters.getUserById(searchResult.userId).nickname}}</b>: <i>"{{ searchResult.content }}"</i></v-list-tile-sub-title>
+                                        </v-list-tile-content>
+                                        <v-list-tile-action>
+                                            <v-list-tile-action-text>{{ searchResult.timestamp }}</v-list-tile-action-text>
+                                        </v-list-tile-action>
+                                    </v-list-tile>
+                                </transition>
+                            </template>
+                        </v-list>
+                    </v-card-text>
+                </v-card>
+            </v-bottom-sheet>
         </main>
     </v-app>
 </template>
@@ -222,6 +260,7 @@
   import ScratchTyping from '@/components/ScratchTyping'
   import { SET_USERS, ADD_TO_USERS, UPDATE_USER, DELETE_USER } from '../vuex/modules/users/mutation-types'
   import { SET_CURRENT_CHANNEL, SET_SPEAKING } from '../vuex/modules/channels/mutation-types'
+  import { UPDATE_CURRENT_USER } from '../vuex/modules/auth/mutation-types'
 
   export default {
     name: 'scratch',
@@ -249,11 +288,18 @@
         userLocation: {},
         geomap: null,
         markerCluster: null,
-        highlightedGeoMessage: 0
+        highlightedGeoMessage: 0,
+        showGiphyDialog: false,
+        randomGiphy: '',
+        giphyInput: '',
+        giphies: [],
+        searchingGiphy: false,
+        status: true
       }
     },
     computed: {
-      dark: function () { return this.$store.state.auth.user.darkTheme || false }
+      dark: function () { return this.$store.state.auth.user.darkTheme || false },
+      showSearchResults: function () { return this.searchResults.length > 0 && this.searchInput.length > 0 }
     },
     watch: {
       '$route' (to, from) {
@@ -293,9 +339,12 @@
     },
     mounted () {
       this.initializeUsers()
-      this.setUserLocation()
+      this.checkIfInactive()
+      setInterval(this.sendStatus, 50000)
 
       let initScratch = function () {
+        this.sendStatus()
+        this.setUserLocation()
         if (this.$route.name === 'scratch-channel') {
           let initCurrentChannel = function () {
             let channel = this.$store.getters.getChannelById(this.$route.params.id)
@@ -329,7 +378,7 @@
         this.$router.push('/login')
       },
       initializeUsers () {
-        window.kuzzle.collection('slack-users', 'foo').search({}, { size: 100 }, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_USERS_COLLECTION, window.Scratch.SCRATCH_INDEX).search({ sort: [{ _uid: 'asc' }] }, { size: 100 }, (err, res) => {
           if (!err) {
             this.$store.dispatch(SET_USERS, res.documents)
 
@@ -338,7 +387,7 @@
         })
       },
       subscribeToUsers () {
-        window.kuzzle.collection('slack-users', 'foo').subscribe({}, { subscribeToSelf: false }, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_USERS_COLLECTION, window.Scratch.SCRATCH_INDEX).subscribe({}, { subscribeToSelf: false }, (err, res) => {
           if (!err) {
             if (res.action === 'create') {
               this.$store.dispatch(ADD_TO_USERS, res.document)
@@ -353,7 +402,7 @@
         })
       },
       subscribeToMessages () {
-        window.kuzzle.collection('slack-messages', 'foo').subscribe({}, { subscribeToSelf: false }, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).subscribe({}, { subscribeToSelf: false }, (err, res) => {
           let message = res.document
 
           if (!err) {
@@ -395,7 +444,7 @@
       retrieveMessages () {
         this.messages = []
 
-        window.kuzzle.collection('slack-messages', 'foo').search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { channel: this.$store.state.channels.currentChannel.id.replace('#', '') } }] } }] } }, sort: [{ timestamp: 'asc' }] }, { size: 100 }, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { channel: this.$store.state.channels.currentChannel.id.replace('#', '') } }] } }] } }, sort: [{ timestamp: 'asc' }] }, { size: 100 }, (err, res) => {
           if (!err) {
             if (res.total > 0) {
               res.documents.forEach(message => this.pushMessage(message))
@@ -417,9 +466,9 @@
           messageContent.location = this.userLocation
         }
 
-        let message = new Document(window.kuzzle.collection('slack-messages', 'foo'), messageContent)
+        let message = new Document(window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX), messageContent)
 
-        window.kuzzle.collection('slack-messages', 'foo').createDocument(message, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).createDocument(message, (err, res) => {
           if (!err) {
             this.pushMessage(message)
           }
@@ -427,6 +476,50 @@
           this.message = ''
           this.typing()
         })
+      },
+      giphyDialog () {
+        let self = this
+
+        this.showGiphyDialog = true
+        window.axios.get('http://api.giphy.com/v1/gifs/trending', {
+          params: {
+            api_key: window.Scratch.GIPHY_API_KEY,
+            limit: 1,
+            offset: Math.floor(Math.random() * 100) + 1
+          }
+        }).then(function (response) {
+          self.randomGiphy = response.data.data[0].images.fixed_height.url
+        }).catch(function (error) {
+          console.log(error)
+        })
+      },
+      searchGiphy () {
+        let self = this
+
+        this.giphies = []
+
+        if (this.searchingGiphy) {
+          clearTimeout(this.searchingGiphy)
+        }
+        this.searchingGiphy = setTimeout(function () {
+          window.axios.get('http://api.giphy.com/v1/gifs/search', {
+            params: {
+              api_key: window.Scratch.GIPHY_API_KEY,
+              q: self.giphyInput,
+              limit: 9,
+              offset: 0
+            }
+          }).then(function (response) {
+            response.data.data.forEach(g => {
+              self.giphies.push(g.images.fixed_height.url)
+            })
+          }).catch(function (error) {
+            console.log(error)
+          })
+        }, 1000)
+      },
+      sendGiphy () {
+        this.showGiphyDialog = true
       },
       switchChannel (channel) {
         this.$router.push({ name: 'scratch-channel', params: { id: channel.id.replace('#', '') } })
@@ -438,7 +531,7 @@
         this.initPolls()
       },
       initPolls () {
-        window.kuzzle.collection('slack-polls', 'foo').search({}, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_POLL_COLLECTION, window.Scratch.SCRATCH_INDEX).search({}, (err, res) => {
           if (!err) {
             this.polls = []
 
@@ -446,7 +539,7 @@
               this.polls.push({ id: poll.id, img: poll.content.img, title: poll.content.question, choices: poll.content.choices })
             })
 
-            window.kuzzle.collection('slack-polls', 'foo').subscribe({}, (err, res) => {
+            window.kuzzle.collection(window.Scratch.SCRATCH_POLL_COLLECTION, window.Scratch.SCRATCH_INDEX).subscribe({}, (err, res) => {
               if (!err) {
                 this.polls.forEach((poll, index) => {
                   if (poll.id === res.document.id) {
@@ -467,13 +560,13 @@
           choices[i] = { label: e, voters: 0, rate: 0 }
         })
 
-        let poll = new Document(window.kuzzle.collection('slack-polls', 'foo'), {
+        let poll = new Document(window.kuzzle.collection(window.Scratch.SCRATCH_POLL_COLLECTION, window.Scratch.SCRATCH_INDEX), {
           img: this.newPollImg,
           question: this.newPollQuestion,
           choices: choices
         })
 
-        window.kuzzle.collection('slack-polls', 'foo').createDocument(poll, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_POLL_COLLECTION, window.Scratch.SCRATCH_INDEX).createDocument(poll, (err, res) => {
           if (!err) {
             this.loading = false
             this.newPollQuestion = ''
@@ -512,11 +605,11 @@
 
         choices[choiceIndex] = Object.assign(choice, { voters: choice.voters + 1 })
 
-        window.kuzzle.collection('slack-polls', 'foo').updateDocument(poll.id, { choices: choices })
+        window.kuzzle.collection(window.Scratch.SCRATCH_POLL_COLLECTION, window.Scratch.SCRATCH_INDEX).updateDocument(poll.id, { choices: choices })
       },
       typing () {
         if (this.message.length <= 1) {
-          window.kuzzle.collection('slack-messages', 'foo').publishMessage({
+          window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).publishMessage({
             event: 'typing',
             channel: this.$store.state.channels.currentChannel.id,
             userId: this.$store.state.auth.user.id,
@@ -529,7 +622,7 @@
       },
       searchMessages (searchInput) {
         this.searchInput = searchInput
-        window.kuzzle.collection('slack-messages', 'foo').search({
+        window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).search({
           sort: [{ timestamp: 'desc' }],
           query: { bool: { must: [{ wildcard: { content: '*' + searchInput.toLowerCase() + '*' } }, { terms: { channel: this.$store.getters.channels.map(c => c.id.replace('#', '')) } }] } }
         },
@@ -553,7 +646,7 @@
         })
       },
       bump (userId, back) {
-        window.kuzzle.collection('slack-messages', 'foo').publishMessage({
+        window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).publishMessage({
           event: 'bump',
           userId: this.$store.state.auth.user.id,
           bumping: userId,
@@ -599,7 +692,7 @@
         if (existingChannel.length === 1) {
           this.switchChannel(existingChannel[0])
         } else {
-          window.kuzzle.collection('slack', 'foo').createDocument(this.newChannelTitle, new Document(window.kuzzle.collection('slack', 'foo'), {
+          window.kuzzle.collection(window.Scratch.SCRATCH_CHANNEL_COLLECTION, window.Scratch.SCRATCH_INDEX).createDocument(this.newChannelTitle, new Document(window.kuzzle.collection(window.Scratch.SCRATCH_CHANNEL_COLLECTION, window.Scratch.SCRATCH_INDEX), {
             label: '',
             type: 'private',
             icon: 'end2end',
@@ -608,21 +701,23 @@
         }
       },
       setUserLocation () {
-        // let self = this
+        let self = this
 
-        this.userLocation = {
+        /* this.userLocation = {
           lat: 43.607436,
           lon: 3.912948
         }
-        this.initMap()
+        this.$store.commit(UPDATE_CURRENT_USER, { localized: true })
+        this.initMap() */
 
-        /* try {
+        try {
           if (navigator.geolocation) {
             navigator.geolocation.watchPosition(function (position) {
               self.userLocation = {
                 lat: position.coords.latitude,
                 lon: position.coords.longitude
               }
+              self.$store.commit(UPDATE_CURRENT_USER, { localized: true })
               self.initMap()
             })
           } else {
@@ -631,10 +726,18 @@
               lat: 43.603510,
               lon: 3.920410
             }
+            this.$store.commit(UPDATE_CURRENT_USER, { localized: true })
+            this.initMap()
           }
         } catch (e) {
           console.log(e)
-        } */
+          this.userLocation = {
+            lat: 43.603510,
+            lon: 3.920410
+          }
+          this.$store.commit(UPDATE_CURRENT_USER, { localized: true })
+          this.initMap()
+        }
       },
       getDistance (location) {
         let radlat1 = Math.PI * this.userLocation.lat / 180
@@ -661,7 +764,7 @@
             window.L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
               maxZoom: 18,
               id: 'mapbox.streets',
-              accessToken: 'pk.eyJ1Ijoic2Ftbmlpc2FuIiwiYSI6ImNqOG4xcndhbzE1cWwycWxkZGFtMmg0cmYifQ.uIZbx6MNp-XBf_Z42G4_8g'
+              accessToken: window.Scratch.MAPBOX_ACCESS_TOKEN
             }).addTo(self.geomap)
 
             window.L.circle([self.userLocation.lat, self.userLocation.lon], {
@@ -718,6 +821,34 @@
           { d: 0.1, a: ' text--lighten-1' },
           { d: 0, a: '' }
         ].find(e => distance >= e.d).a
+      },
+      sendStatus () {
+        window.kuzzle.collection(window.Scratch.SCRATCH_USERS_COLLECTION, window.Scratch.SCRATCH_INDEX).updateDocument(this.$store.state.auth.user.id, {
+          status: this.status,
+          lastActive: new Date().getTime()
+        })
+      },
+      checkIfInactive () {
+        let self = this
+        let t
+
+        window.onload = resetTimer
+        window.onmousemove = resetTimer
+        window.onmousedown = resetTimer
+        window.onclick = resetTimer
+        window.onscroll = resetTimer
+        window.onkeypress = resetTimer
+
+        function setInactive () {
+          self.status = false
+          self.sendStatus()
+        }
+
+        function resetTimer () {
+          clearTimeout(t)
+          self.status = true
+          t = setTimeout(setInactive, 300000)
+        }
       }
     }
   }

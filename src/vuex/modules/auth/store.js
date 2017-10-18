@@ -1,5 +1,6 @@
 import {
-  SET_CURRENT_USER
+  SET_CURRENT_USER,
+  UPDATE_CURRENT_USER
 } from './mutation-types'
 import SessionUser from '../../../models/ScratchUser'
 import actions from './actions'
@@ -12,6 +13,12 @@ const state = {
 export const mutations = {
   [SET_CURRENT_USER] (state, user) {
     state.user = user
+  },
+  [UPDATE_CURRENT_USER] (state, data) {
+    let updatedUser = Object.assign(state.user, data)
+
+    state.user = updatedUser
+    localStorage.setItem('user', JSON.stringify(updatedUser))
   }
 }
 

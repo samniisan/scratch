@@ -123,14 +123,14 @@
               this.loading = false
               this.errorSnackbar(err)
             } else {
-              let newUser = new Document(window.kuzzle.collection('slack-messages', 'foo'), this.registerEmail, {
+              let newUser = new Document(window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX), this.registerEmail, {
                 nickname: userDocument.content.nickname,
                 avatar: userDocument.content.avatar,
                 ido: '',
                 darkTheme: false
               })
 
-              window.kuzzle.collection('slack-users', 'foo').createDocument(newUser, (err, res) => {
+              window.kuzzle.collection(window.Scratch.SCRATCH_USERS_COLLECTION, window.Scratch.SCRATCH_INDEX).createDocument(newUser, (err, res) => {
                 this.loading = false
                 if (err) {
                   this.error = err.message

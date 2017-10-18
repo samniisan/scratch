@@ -5,6 +5,7 @@
             persistent
             clipped
             enable-resize-watcher
+            disable-route-watcher
             v-model="show">
             <v-list>
                 <v-subheader v-if="$store.state.channels.channels.length > 0" class="mt-3 grey--text text--darken-1">CHANNELS</v-subheader>
@@ -27,22 +28,24 @@
                     <v-list-tile-action>
                         <v-icon class="grey--text text--darken-1">add_circle_outline</v-icon>
                     </v-list-tile-action>
-                    <v-list-tile-title class="grey--text text--darken-1">Create a channel</v-list-tile-title>
+                    <v-list-tile-title class="grey--text text--darken-1 body-1">Create a channel</v-list-tile-title>
                 </v-list-tile>
-                <v-subheader class="mt-3 grey--text text--darken-1">GEO-LOCALIZED CHANNEL</v-subheader>
-                <v-list>
-                    <v-list-tile ripple @click="$emit('channel-switch', $store.state.channels.geoChannel)">
-                        <v-list-tile-action>
-                            <v-badge color="red darken-1" :value="$store.state.channels.geoChannel.unread">
-                                <span slot="badge" v-text="Number($store.state.channels.geoChannel.unread)"></span>
-                                <v-icon :color="$store.getters.currentChannel.id === '#geo' ? 'teal' : 'gray'">{{ $store.state.channels.geoChannel.icon }}</v-icon>
-                            </v-badge>
-                        </v-list-tile-action>
-                        <v-list-tile-content>
-                            <v-list-tile-title>{{ $store.state.channels.geoChannel.label }}</v-list-tile-title>
-                        </v-list-tile-content>
-                    </v-list-tile>
-                </v-list>
+                <div v-if="localized">
+                    <v-subheader class="mt-3 grey--text text--darken-1">GEO-LOCALIZED CHANNEL</v-subheader>
+                    <v-list>
+                        <v-list-tile ripple @click="$emit('channel-switch', $store.state.channels.geoChannel)">
+                            <v-list-tile-action>
+                                <v-badge color="red darken-1" :value="$store.state.channels.geoChannel.unread">
+                                    <span slot="badge" v-text="Number($store.state.channels.geoChannel.unread)"></span>
+                                    <v-icon :color="$store.getters.currentChannel.id === '#geo' ? 'teal' : 'gray'">{{ $store.state.channels.geoChannel.icon }}</v-icon>
+                                </v-badge>
+                            </v-list-tile-action>
+                            <v-list-tile-content>
+                                <v-list-tile-title>{{ $store.state.channels.geoChannel.label }}</v-list-tile-title>
+                            </v-list-tile-content>
+                        </v-list-tile>
+                    </v-list>
+                </div>
                 <v-subheader v-if="$store.state.channels.privateChannels.length > 0" class="mt-3 grey--text text--darken-1">PRIVATE MESSAGES</v-subheader>
                 <v-list v-if="$store.state.channels.privateChannels.length > 0">
                     <template v-for="privateChannel in $store.state.channels.privateChannels">
@@ -66,7 +69,7 @@
                     <v-list-tile-action>
                         <v-icon class="grey--text text--darken-1">add_circle_outline</v-icon>
                     </v-list-tile-action>
-                    <v-list-tile-title class="grey--text text--darken-1">Start a conversation</v-list-tile-title>
+                    <v-list-tile-title class="grey--text text--darken-1 body-1">Start a conversation</v-list-tile-title>
                 </v-list-tile>
                 <v-list-tile class="mt-3" ripple @click="$emit('poll-view')">
                     <v-list-tile-action>
@@ -90,12 +93,12 @@
         </v-navigation-drawer>
         <v-navigation-drawer
             app
-            persistent
             clipped
             right
             enable-resize-watcher
+            disable-route-watcher
             v-model="showContextDrawer">
-            <v-card class="teal lighten-2 elevation-6">
+            <v-card flat class="teal lighten-2">
                 <v-card-text>
                     <v-container grid-list-md>
                         <v-layout row wrap>
@@ -113,9 +116,12 @@
             </v-card>
             <v-list>
                 <v-list-tile v-for="user in $store.getters.usersMinusSelf" :key="user.id" ripple avatar>
-                    <v-list-tile-avatar class="grey--text red--after">
-                        <img :src="user.avatar" alt="">
-                    </v-list-tile-avatar>
+                    <v-badge left :color="((user.lastActive || 0) + 60000) >= (new Date().getTime()) ? (user.status ? 'green lighten-1' : 'orange darken-1') : 'grey darken-1'" overlap>
+                        <span slot="badge"></span>
+                        <v-list-tile-avatar class="grey--text red--after">
+                            <img :src="user.avatar" alt="">
+                        </v-list-tile-avatar>
+                    </v-badge>
                     <v-list-tile-content>
                         <v-list-tile-title v-text="user.nickname"></v-list-tile-title>
                         <v-list-tile-sub-title v-text="user.id"></v-list-tile-sub-title>
@@ -173,8 +179,8 @@
         </v-toolbar>
         <v-dialog v-model="showCreateChannelDialog" persistent>
             <v-card>
-                <v-card-title>
-                    <span class="headline">New channel</span>
+                <v-card-title class="teal">
+                    <span class="headline white--text">New channel</span>
                 </v-card-title>
                 <v-card-text>
                     <v-text-field label="Title" v-model="newChannelTitle" required></v-text-field>
@@ -209,10 +215,10 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
-        <v-dialog v-model="showCreatePrivateChannelDialog" persistent width="60%">
+        <v-dialog v-model="showCreatePrivateChannelDialog" persistent max-width="60%">
             <v-card>
-                <v-card-title>
-                    <span class="headline">Start a conversation</span>
+                <v-card-title class="teal">
+                    <span class="headline white--text">Start a conversation</span>
                 </v-card-title>
                 <v-card-text>
                     <v-text-field label="Private channel label" v-model="newPrivateChannelTitle" required></v-text-field>
@@ -282,7 +288,8 @@
     },
     computed: {
       title: function () { return this.$store.state.channels.currentChannel.type === 'private' ? this.getPrivateChannelLabel(this.$store.state.channels.currentChannel) : this.$store.state.channels.currentChannel.label },
-      icon: function () { return this.$store.state.channels.currentChannel.type === 'private' ? 'forum' : this.$store.state.channels.currentChannel.icon }
+      icon: function () { return this.$store.state.channels.currentChannel.type === 'private' ? 'forum' : this.$store.state.channels.currentChannel.icon },
+      localized: function () { return this.$store.state.auth.user.localized }
     },
     mounted () {
       let initSideBar = function () {
@@ -294,7 +301,7 @@
     },
     methods: {
       initializeChannels () {
-        window.kuzzle.collection('slack', 'foo').search({ query: { terms: { type: ['public', 'restricted'] } } }, { size: 100 }, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_CHANNEL_COLLECTION, window.Scratch.SCRATCH_INDEX).search({ query: { terms: { type: ['public', 'restricted'] } } }, { size: 100 }, (err, res) => {
           if (!err) {
             this.$store.dispatch(SET_CHANNELS, res.documents)
           }
@@ -304,7 +311,7 @@
       },
       initializePrivateChannels () {
         setTimeout(() => {
-          window.kuzzle.collection('slack', 'foo').search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { 'users': this.$store.state.auth.user.id } }, { match_phrase_prefix: { type: 'private' } }] } }] } } }, { size: 100 }, (err, res) => {
+          window.kuzzle.collection(window.Scratch.SCRATCH_CHANNEL_COLLECTION, window.Scratch.SCRATCH_INDEX).search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { 'users': this.$store.state.auth.user.id } }, { match_phrase_prefix: { type: 'private' } }] } }] } } }, { size: 100 }, (err, res) => {
             if (!err) {
               this.$store.dispatch(SET_PRIVATE_CHANNELS, res.documents)
             }
@@ -312,7 +319,7 @@
         }, 200)
       },
       subscribeToChannels () {
-        window.kuzzle.collection('slack', 'foo').subscribe({}, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_CHANNEL_COLLECTION, window.Scratch.SCRATCH_INDEX).subscribe({}, (err, res) => {
           if (!err) {
             if (res.action === 'create') {
               if ((['public', 'restricted'].includes(res.document.content.type)) || (res.document.content.type === 'private' && res.document.content.users.includes(this.$store.state.auth.user.id))) {
@@ -328,13 +335,13 @@
       createChannel () {
         this.loading = true
 
-        let channel = new Document(window.kuzzle.collection('slack', 'foo'), {
+        let channel = new Document(window.kuzzle.collection(window.Scratch.SCRATCH_CHANNEL_COLLECTION, window.Scratch.SCRATCH_INDEX), {
           label: this.newChannelTitle,
           type: this.newChannelRestricted ? 'restricted' : 'public',
           icon: this.newChannelIcon || 'forum'
         })
 
-        window.kuzzle.collection('slack', 'foo').createDocument('#' + this.newChannelTitle, channel, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_CHANNEL_COLLECTION, window.Scratch.SCRATCH_INDEX).createDocument('#' + this.newChannelTitle, channel, (err, res) => {
           if (!err) {
             this.closeCreateChannelDialog()
           }
@@ -352,14 +359,14 @@
 
         this.privateChatUsers.push(this.$store.state.auth.user.id)
 
-        let channel = new Document(window.kuzzle.collection('slack', 'foo'), {
+        let channel = new Document(window.kuzzle.collection(window.Scratch.SCRATCH_CHANNEL_COLLECTION, window.Scratch.SCRATCH_INDEX), {
           label: this.newPrivateChannelTitle,
           type: 'private',
           icon: this.privateChatUsers.length === 2 ? 'end2end' : 'multiple',
           users: this.privateChatUsers
         })
 
-        window.kuzzle.collection('slack', 'foo').createDocument(this.newChannelTitle, channel, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_CHANNEL_COLLECTION, window.Scratch.SCRATCH_INDEX).createDocument(this.newChannelTitle, channel, (err, res) => {
           if (!err) {
             this.closeCreatePrivateChannelDialog()
           }
