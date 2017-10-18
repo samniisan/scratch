@@ -82,6 +82,9 @@
         showError: false
       }
     },
+    mounted () {
+      window.clearInterval(window.aliveLoop)
+    },
     methods: {
       login () {
         this.loading = true

@@ -26,6 +26,23 @@ const state = {
   privateChannels: []
 }
 
+let checkAllUnread = function () {
+  let unread = false
+
+  state.channels.forEach(function (c) {
+    if (c.unread > 0) {
+      unread = true
+    }
+  })
+  state.privateChannels.forEach(function (pc) {
+    if (pc.unread > 0) {
+      unread = true
+    }
+  })
+
+  window.document.getElementById('scratch-favicon').setAttribute('href', unread ? '/static/favicon-active.ico' : '/static/favicon.ico')
+}
+
 export const mutations = {
   [SET_CURRENT_CHANNEL] (state, channel) {
     channel.unread = 0
@@ -36,6 +53,7 @@ export const mutations = {
     }
     channel.typingMessage = ''
     state.currentChannel = channel
+    checkAllUnread()
   },
   [SET_CHANNELS] (state, channels) {
     state.channels = channels
@@ -64,6 +82,7 @@ export const mutations = {
   },
   [INCREMENT_UNREAD] (state, channel) {
     channel.unread = channel.unread + 1 || 1
+    window.document.getElementById('scratch-favicon').setAttribute('href', '/static/favicon-active.ico')
   },
   [SET_SPEAKING] (state, data) {
     let channel = getters.getChannelById(state)(data.channel)

@@ -37,27 +37,26 @@
                                         <transition-group name="slide-fade" mode="out-in" appear>
                                             <template v-for="(message, index) in messages">
                                                 <div :key="index">
-                                                    <v-subheader v-if="message.header" v-text="message.header"></v-subheader>
+                                                    <v-subheader class="teal accent-4 white--text body-1" v-if="message.header" v-text="message.header"></v-subheader>
                                                     <v-list-tile avatar v-else v-bind:key="message.title">
                                                         <transition name="slide-fade-left" mode="out-in" appear>
                                                             <v-list-tile-action v-if="highlightedGeoMessage === message.id">
-                                                                <v-icon color="teal">location_on</v-icon>
+                                                                <v-icon medium color="teal">location_on</v-icon>
                                                             </v-list-tile-action>
                                                         </transition>
                                                         <v-list-tile-avatar>
                                                             <img v-bind:src="message.avatar">
                                                         </v-list-tile-avatar>
                                                         <v-list-tile-content>
-                                                            <v-list-tile-title v-html="message.title" v-if="!message.same"></v-list-tile-title>
-                                                            <v-list-tile-sub-title v-if="highlightedGeoMessage === message.id" v-text="message.subtitle" class="subheading teal--text"></v-list-tile-sub-title>
-                                                            <v-list-tile-sub-title v-else v-html="message.subtitle"></v-list-tile-sub-title>
+                                                            <v-list-tile-title v-text="message.title"></v-list-tile-title>
+                                                            <v-list-tile-sub-title v-if="highlightedGeoMessage === message.id" v-text="message.subtitle" class="subheading teal--text selectable-text"></v-list-tile-sub-title>
+                                                            <v-list-tile-sub-title class="selectable-text" v-else v-text="message.subtitle"></v-list-tile-sub-title>
                                                         </v-list-tile-content>
                                                         <v-list-tile-action>
                                                             <v-list-tile-action-text v-if="$store.state.channels.currentChannel.id === '#geo'" :class="getGeoDistanceColor(message.location)" v-text="getDistance(message.location) + ' km'"></v-list-tile-action-text>
                                                             <v-list-tile-action-text>{{ message.timestamp }}</v-list-tile-action-text>
                                                         </v-list-tile-action>
                                                     </v-list-tile>
-                                                    <v-divider v-if="index + 1 < messages.length"></v-divider>
                                                 </div>
                                             </template>
                                         </transition-group>
@@ -340,7 +339,7 @@
     mounted () {
       this.initializeUsers()
       this.checkIfInactive()
-      setInterval(this.sendStatus, 50000)
+      window.aliveLoop = setInterval(this.sendStatus, 50000)
 
       let initScratch = function () {
         this.sendStatus()
@@ -372,6 +371,9 @@
     },
     methods: {
       logout () {
+        this.status = false
+        this.sendStatus()
+        window.clearInterval(window.aliveLoop)
         window.kuzzle.logout()
         localStorage.removeItem('user')
         localStorage.removeItem('jwtToken')
@@ -447,7 +449,15 @@
         window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { channel: this.$store.state.channels.currentChannel.id.replace('#', '') } }] } }] } }, sort: [{ timestamp: 'asc' }] }, { size: 100 }, (err, res) => {
           if (!err) {
             if (res.total > 0) {
-              res.documents.forEach(message => this.pushMessage(message))
+              let date = window.moment.unix(new Date().getTime() / 1000).format('MMMM Do YYYY')
+              res.documents.forEach(message => {
+                let messageDate = window.moment.unix(message.content.timestamp / 1000).format('MMMM Do YYYY')
+                if (messageDate !== date) {
+                  date = messageDate
+                  this.messages.push({ header: 'Messages from ' + date })
+                }
+                this.pushMessage(message)
+              })
             } else {
               this.messages.push({ header: 'This discussion is empty, try saying something nice!' })
             }
@@ -455,27 +465,29 @@
         })
       },
       sendMessage () {
-        let messageContent = {
-          userId: this.$store.state.auth.user.id,
-          content: this.message,
-          timestamp: Date.now(),
-          channel: this.$store.state.channels.currentChannel.id
-        }
-
-        if (this.$store.state.channels.currentChannel.id === '#geo') {
-          messageContent.location = this.userLocation
-        }
-
-        let message = new Document(window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX), messageContent)
-
-        window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).createDocument(message, (err, res) => {
-          if (!err) {
-            this.pushMessage(message)
+        if (this.message.length > 0) {
+          let messageContent = {
+            userId: this.$store.state.auth.user.id,
+            content: this.message,
+            timestamp: Date.now(),
+            channel: this.$store.state.channels.currentChannel.id
           }
 
-          this.message = ''
-          this.typing()
-        })
+          if (this.$store.state.channels.currentChannel.id === '#geo') {
+            messageContent.location = this.userLocation
+          }
+
+          let message = new Document(window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX), messageContent)
+
+          window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).createDocument(message, (err, res) => {
+            if (!err) {
+              this.pushMessage(message)
+            }
+
+            this.message = ''
+            this.typing()
+          })
+        }
       },
       giphyDialog () {
         let self = this
@@ -594,7 +606,7 @@
           if (!this.geomap) {
             setTimeout(function () {
               this.addMarker(messageContent)
-            }.bind(this), 1000)
+            }.bind(this), 2000)
           } else {
             this.addMarker(messageContent)
           }
@@ -785,42 +797,48 @@
         }, 1000)
       },
       addMarker (message) {
-        let self = this
+        if (message.location) {
+          let self = this
 
-        let icon = window.L.divIcon({
-          className: 'avatar',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15],
-          popupAnchor: [0, -15],
-          html: '<img src="' + message.avatar + '"/>'
-        })
-
-        let marker = window.L.marker([message.location.lat, message.location.lon], { icon }).addTo(this.geomap)
-        marker.messageId = message.id
-        marker
-          .on('mouseover', function () {
-            self.highlightedGeoMessage = this.messageId
-          })
-          .on('mouseout', function () {
-            self.highlightedGeoMessage = 0
+          let icon = window.L.divIcon({
+            className: 'avatar',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, -15],
+            html: '<img src="' + message.avatar + '"/>'
           })
 
-        let popup = window.L.popup({ autoPan: false }).setContent('<b>' + message.title + '</b><br/>' + message.subtitle)
+          let marker = window.L.marker([message.location.lat, message.location.lon], {icon}).addTo(this.geomap)
+          marker.messageId = message.id
+          marker
+            .on('mouseover', function () {
+              self.highlightedGeoMessage = this.messageId
+            })
+            .on('mouseout', function () {
+              self.highlightedGeoMessage = 0
+            })
 
-        marker.bindPopup(popup).openPopup()
-        this.markerCluster.addLayer(marker)
+          let popup = window.L.popup({autoPan: false}).setContent('<b>' + message.title + '</b><br/>' + message.subtitle)
+
+          marker.bindPopup(popup).openPopup()
+          this.markerCluster.addLayer(marker)
+        }
       },
       getGeoDistanceColor (location) {
         let color = 'subheading teal--text'
         let distance = this.getDistance(location)
 
-        return color + [
-          { d: 1.5, a: ' text--lighten-4' },
-          { d: 1, a: ' text--lighten-3' },
-          { d: 0.5, a: ' text--lighten-2' },
-          { d: 0.1, a: ' text--lighten-1' },
-          { d: 0, a: '' }
-        ].find(e => distance >= e.d).a
+        if (!isNaN(distance)) {
+          return color + [
+            {d: 1.5, a: ' text--lighten-4'},
+            {d: 1, a: ' text--lighten-3'},
+            {d: 0.5, a: ' text--lighten-2'},
+            {d: 0.1, a: ' text--lighten-1'},
+            {d: 0, a: ''}
+          ].find(e => distance >= e.d).a
+        } else {
+          return color + ' text--lighten-4'
+        }
       },
       sendStatus () {
         window.kuzzle.collection(window.Scratch.SCRATCH_USERS_COLLECTION, window.Scratch.SCRATCH_INDEX).updateDocument(this.$store.state.auth.user.id, {
@@ -876,5 +894,8 @@
       /* .slide-fade-leave-active for <2.1.8 */ {
       transform: translateX(-100px);
       opacity: 0;
+  }
+  .selectable-text {
+      user-select: initial;
   }
 </style>
