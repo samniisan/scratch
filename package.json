@@ -20,7 +20,8 @@
     "vue-router": "latest",
     "vuetify": "latest",
     "vuex": "latest",
-    "vuex-router-sync": "latest"
+    "vuex-router-sync": "latest",
+    "kuzzle-sdk": "^5.0.10"
   },
   "devDependencies": {
     "autoprefixer": "^6.7.2",
