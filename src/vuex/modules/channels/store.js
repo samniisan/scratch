@@ -88,9 +88,10 @@ export const mutations = {
     let channel = getters.getChannelById(state)(data.channel)
     let speaking = []
 
+    console.log('CHANNEL: ' + channel)
     if (typeof channel !== 'undefined') {
       if (channel.speaking.filter(speaking => speaking.userId === data.userId).length === 0) {
-        speaking = {userId: data.userId, typing: data.typing}
+        speaking = { userId: data.userId, typing: data.typing }
         channel.speaking.push(speaking)
         if (data.channel === state.currentChannel.id) {
           state.currentChannel.speaking = channel.speaking

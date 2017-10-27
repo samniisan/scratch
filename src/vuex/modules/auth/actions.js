@@ -1,7 +1,7 @@
 import ScratchUser from '../../../models/ScratchUser'
 import * as types from './mutation-types'
 
-let saveUser = function (res, commit) {
+let saveUser = function (res, commit, resolve, reject) {
   const user = ScratchUser()
 
   user.id = res._id
@@ -20,6 +20,9 @@ let saveUser = function (res, commit) {
       localStorage.setItem('user', JSON.stringify(user))
 
       commit(types.SET_CURRENT_USER, user)
+      resolve()
+    } else {
+      reject(new Error('An error occurred when trying to log you in'))
     }
   })
 }
@@ -64,8 +67,7 @@ export default {
       } else {
         window.kuzzle.login('local', { username: data.username, password: data.password }, '4h', (err, res) => {
           if (!err) {
-            saveUser(res, commit)
-            resolve()
+            saveUser(res, commit, resolve, reject)
           } else {
             reject(err)
           }

@@ -114,39 +114,42 @@
                     </v-container>
                 </v-card-text>
             </v-card>
-            <v-list>
-                <v-list-tile v-for="user in $store.getters.usersMinusSelf" :key="user.id" ripple avatar>
-                    <v-badge left :color="((user.lastActive || 0) + 60000) >= (new Date().getTime()) ? (user.status ? 'green lighten-1' : 'orange darken-1') : 'grey darken-1'" overlap>
-                        <span slot="badge"></span>
-                        <v-list-tile-avatar class="grey--text red--after">
-                            <img :src="user.avatar" alt="">
-                        </v-list-tile-avatar>
-                    </v-badge>
-                    <v-list-tile-content>
-                        <v-list-tile-title v-text="user.nickname"></v-list-tile-title>
-                        <v-list-tile-sub-title v-text="user.id"></v-list-tile-sub-title>
-                    </v-list-tile-content>
-                    <v-list-tile-action>
-                        <v-menu
-                            transition="scale-transition">
-                            <v-btn slot="activator" icon ripple>
-                                <v-icon class="grey--text text--lighten-1">menu</v-icon>
-                            </v-btn>
-                            <v-list>
-                                <v-list-tile @click="$emit('show-user-details', user.id)">
-                                    <v-list-tile-title>Show details</v-list-tile-title>
-                                </v-list-tile>
-                                <v-list-tile @click="$emit('start-one-to-one', user.id)">
-                                    <v-list-tile-title>Start a conversation</v-list-tile-title>
-                                </v-list-tile>
-                                <v-list-tile @click="$emit('bump', user.id)">
-                                    <v-list-tile-title>Bump</v-list-tile-title>
-                                </v-list-tile>
-                            </v-list>
-                        </v-menu>
-                    </v-list-tile-action>
-                </v-list-tile>
-            </v-list>
+            <v-expansion-panel popout>
+                <v-expansion-panel-content v-for="user in $store.getters.usersMinusSelf" :key="user.id" ripple>
+                    <div slot="header">
+                        <v-layout align-center row spacer slot="header">
+                            <v-flex xs3>
+                                <v-badge left :color="((user.lastActive || 0) + 60000) >= (new Date().getTime()) ? (user.status ? 'green lighten-1' : 'orange darken-1') : 'grey darken-1'" overlap>
+                                    <span slot="badge"></span>
+                                    <v-avatar size="42px">
+                                        <img :src="user.avatar" :alt="user.nickname">
+                                    </v-avatar>
+                                </v-badge>
+                            </v-flex>
+                            <v-flex xs9>
+                                <v-list-tile-content>
+                                    <v-list-tile-title v-text="user.nickname" class="teal--text subheading"></v-list-tile-title>
+                                    <v-list-tile-sub-title v-text="user.id.replace('@kuzzle.io', '')"></v-list-tile-sub-title>
+                                </v-list-tile-content>
+                            </v-flex>
+                        </v-layout>
+                    </div>
+                    <v-card>
+                        <v-card-media :src="user.avatar" height="200px"></v-card-media>
+                        <v-card-title>
+                            <div>
+                                <div class="headline">{{ user.nickname }}</div>
+                                <span class="grey--text" v-text="user.id.replace('@kuzzle.io', '')"></span>
+                            </div>
+                        </v-card-title>
+                        <v-card-text v-if="user.ido !== ''" class="subheading"><blockquote><i>"{{ user.ido }}"</i></blockquote></v-card-text>
+                        <v-card-actions>
+                            <v-btn block class="green--text darken-1" flat @click.native="$emit('start-one-to-one', user.id)">Chat<v-icon right dark>chat</v-icon></v-btn>
+                            <v-btn block class="pink--text darken-1" flat @click.native="$emit('bump', user.id)">Bump!<v-icon right dark>notifications_active</v-icon></v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-expansion-panel-content>
+            </v-expansion-panel>
         </v-navigation-drawer>
         <v-toolbar dark app fixed clipped-left clipped-right class="teal lighten-1">
             <v-toolbar-title>
@@ -155,13 +158,13 @@
             <span class="title"><transition name="slide-fade" mode="out-in" appear><v-chip v-if="typeof title !== 'undefined'" label :key="title"><v-icon left>{{ icon }}</v-icon>{{ title }}</v-chip></transition></span>
             <v-spacer></v-spacer>
             <v-text-field
-                    label="Search..."
-                    single-line
-                    append-icon="search"
-                    dark
-                    hide-details
-                    v-model="searchInput"
-                    @input="searchMessages">
+                label="Search..."
+                single-line
+                append-icon="search"
+                dark
+                hide-details
+                v-model="searchInput"
+                @input="searchMessages">
             </v-text-field>
             <v-card class="teal lighten-1 elevation-0" height="60px">
                 <v-card-text>

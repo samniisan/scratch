@@ -16,7 +16,7 @@ export const privateChannels = state => {
 
 export const getChannelById = (state, getters) => (id) => {
   if (typeof id === 'string') {
-    if (id === 'geo') {
+    if (['geo', '#geo'].includes(id)) {
       return state.geoChannel
     }
     let channel = state.channels.filter(channel => [id, '#' + id].includes(channel.id))[0]

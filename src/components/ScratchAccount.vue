@@ -77,8 +77,7 @@
         </v-container>
         <v-snackbar
             :timeout=6000
-            :success="snackbarLevel === 'success'"
-            :error="snackbarLevel === 'error'"
+            :color="snackbarLevel"
             v-model="snackbar">
             {{ snackbarText }}
             <v-btn dark flat @click.native="snackbar = false">Close</v-btn>

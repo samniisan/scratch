@@ -37,6 +37,17 @@
                                         <transition-group name="slide-fade" mode="out-in" appear>
                                             <template v-for="(message, index) in messages">
                                                 <div :key="index">
+                                                    <v-btn
+                                                        v-if="message.loadMore"
+                                                        @click="loadMoreMessages(); message.loadMore = false;"
+                                                        slot="activator"
+                                                        color="teal accent-1"
+                                                        small
+                                                        absolute
+                                                        title="Load more messages"
+                                                        right>
+                                                        <v-icon>add</v-icon>
+                                                    </v-btn>
                                                     <v-subheader class="teal accent-4 white--text body-1" v-if="message.header" v-text="message.header"></v-subheader>
                                                     <v-list-tile avatar v-else v-bind:key="message.title">
                                                         <transition name="slide-fade-left" mode="out-in" appear>
@@ -136,9 +147,24 @@
                                         <v-toolbar-title row>Compose</v-toolbar-title>
                                         <v-spacer></v-spacer>
                                         <scratch-typing></scratch-typing>
-                                        <v-icon style="cursor:pointer;" class="white--text" @click="giphyDialog" title="Add gif">gif</v-icon>&nbsp;
-                                        <v-icon style="cursor:pointer;" class="white--text" @click="emojiHidden = !emojiHidden" title="Add emoji">face</v-icon>&nbsp;
-                                        <v-icon style="cursor:pointer;" class="white--text" @click="sendMessage" title="Send">send</v-icon>
+                                        <v-tooltip top color="teal">
+                                            <v-btn small icon @click="giphyDialog" slot="activator">
+                                                <v-icon class="white--text">gif</v-icon>
+                                            </v-btn>
+                                            <span>Add gif</span>
+                                        </v-tooltip>
+                                        <v-tooltip top color="teal">
+                                            <v-btn small icon @click="emojiHidden = !emojiHidden" slot="activator">
+                                                <v-icon class="white--text">face</v-icon>
+                                            </v-btn>
+                                            <span>Add emoji</span>
+                                        </v-tooltip>
+                                        <v-tooltip top color="teal">
+                                            <v-btn small icon @click="sendMessage" slot="activator">
+                                                <v-icon class="white--text">send</v-icon>
+                                            </v-btn>
+                                            <span>Send</span>
+                                        </v-tooltip>
                                     </v-toolbar>
                                     <v-container class="pa-0">
                                         <v-text-field
@@ -270,6 +296,7 @@
         loading: false,
         message: '',
         messages: [],
+        fetchedMessages: 0,
         polls: [],
         dialogEmail: '',
         dialogPassword: '',
@@ -304,6 +331,7 @@
       '$route' (to, from) {
         this.polls = []
         this.messages = []
+        this.fetchedMessages = 0
         if (to.name === 'scratch-channel') {
           let channel = this.$store.getters.getChannelById(to.params.id)
 
@@ -446,20 +474,58 @@
       retrieveMessages () {
         this.messages = []
 
-        window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { channel: this.$store.state.channels.currentChannel.id.replace('#', '') } }] } }] } }, sort: [{ timestamp: 'asc' }] }, { size: 100 }, (err, res) => {
+        window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { channel: this.$store.state.channels.currentChannel.id.replace('#', '') } }] } }] } }, sort: [{ timestamp: 'desc' }] }, { size: 100 }, (err, res) => {
           if (!err) {
             if (res.total > 0) {
+              let firstDate = true
+              this.fetchedMessages += res.fetchedDocument
+              let loadMore = res.total > this.fetchedMessages
+
               let date = window.moment.unix(new Date().getTime() / 1000).format('MMMM Do YYYY')
-              res.documents.forEach(message => {
+              res.documents.reverse().forEach(message => {
                 let messageDate = window.moment.unix(message.content.timestamp / 1000).format('MMMM Do YYYY')
-                if (messageDate !== date) {
+                if (messageDate !== date || firstDate) {
+                  firstDate = false
                   date = messageDate
-                  this.messages.push({ header: 'Messages from ' + date })
+                  this.messages.push({ header: 'Messages from ' + date, loadMore })
+                  if (loadMore) {
+                    loadMore = false
+                  }
                 }
                 this.pushMessage(message)
               })
             } else {
               this.messages.push({ header: 'This discussion is empty, try saying something nice!' })
+            }
+          }
+        })
+      },
+      loadMoreMessages () {
+        let self = this
+        let additionalMessages = []
+
+        window.kuzzle.collection(window.Scratch.SCRATCH_MESSAGES_COLLECTION, window.Scratch.SCRATCH_INDEX).search({ query: { bool: { should: [{ bool: { must: [{ match_phrase_prefix: { channel: this.$store.state.channels.currentChannel.id.replace('#', '') } }] } }] } }, sort: [{ timestamp: 'desc' }] }, { size: 10, from: this.fetchedMessages }, (err, res) => {
+          if (!err) {
+            if (res.total > 0) {
+              let firstDate = true
+              this.fetchedMessages += res.fetchedDocument
+              let loadMore = res.total > this.fetchedMessages
+
+              let date = window.moment.unix(new Date().getTime() / 1000).format('MMMM Do YYYY')
+              res.documents.reverse().forEach(message => {
+                let messageDate = window.moment.unix(message.content.timestamp / 1000).format('MMMM Do YYYY')
+                if (messageDate !== date || firstDate) {
+                  firstDate = false
+                  date = messageDate
+                  additionalMessages.push({ header: 'Messages from ' + date, loadMore })
+                  if (loadMore) {
+                    loadMore = false
+                  }
+                }
+                additionalMessages.push(message)
+              })
+
+              additionalMessages.reverse().forEach(m => self.pushMessage(m, true))
             }
           }
         })
@@ -586,29 +652,43 @@
             this.newPollImg = ''
             this.polls.push({ id: res.id, img: res.content.img, title: res.content.question, choices: res.content.choices })
             this.showCreatePollDialog = false
+          } else {
+            this.loading = false
           }
         })
       },
-      pushMessage (message) {
-        let user = this.$store.getters.getUserById(message.content.userId)
-        let messageContent = {
-          id: message.id,
-          avatar: user.avatar,
-          title: user.nickname,
-          subtitle: message.content.content,
-          timestamp: window.moment(message.content.timestamp, 'x').fromNow(),
-          location: message.content.location || null
+      pushMessage (message, fromStart) {
+        let messageContent
+
+        if (typeof message.content !== 'undefined') {
+          let user = this.$store.getters.getUserById(message.content.userId)
+          messageContent = {
+            id: message.id,
+            avatar: user.avatar,
+            title: user.nickname,
+            subtitle: message.content.content,
+            timestamp: window.moment(message.content.timestamp, 'x').fromNow(),
+            location: message.content.location || null
+          }
+        } else {
+          messageContent = message
         }
 
-        this.messages.push(messageContent)
+        if (fromStart) {
+          this.messages.unshift(messageContent)
+        } else {
+          this.messages.push(messageContent)
+        }
 
-        if (message.content.channel === '#geo') {
-          if (!this.geomap) {
-            setTimeout(function () {
+        if (typeof message.content !== 'undefined') {
+          if (message.content.channel === '#geo') {
+            if (!this.geomap) {
+              setTimeout(function () {
+                this.addMarker(messageContent)
+              }.bind(this), 2000)
+            } else {
               this.addMarker(messageContent)
-            }.bind(this), 2000)
-          } else {
-            this.addMarker(messageContent)
+            }
           }
         }
       },
@@ -713,16 +793,16 @@
         }
       },
       setUserLocation () {
-        let self = this
+        // let self = this
 
-        /* this.userLocation = {
-          lat: 43.607436,
-          lon: 3.912948
+        this.userLocation = {
+          lat: 43.601661,
+          lon: 3.900681
         }
         this.$store.commit(UPDATE_CURRENT_USER, { localized: true })
-        this.initMap() */
+        this.initMap()
 
-        try {
+        /* try {
           if (navigator.geolocation) {
             navigator.geolocation.watchPosition(function (position) {
               self.userLocation = {
@@ -749,7 +829,7 @@
           }
           this.$store.commit(UPDATE_CURRENT_USER, { localized: true })
           this.initMap()
-        }
+        } */
       },
       getDistance (location) {
         let radlat1 = Math.PI * this.userLocation.lat / 180
