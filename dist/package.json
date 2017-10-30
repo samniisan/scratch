@@ -1,0 +1,10 @@
+{
+  "name": "slam-deploy",
+  "version": "1.0.0",
+  "description": "Used to deploy Slam to Heroku",
+  "author": "Samuel Bouic <samuel.bouic@gmail.com>",
+  "private": true,
+  "scripts": {
+    "postinstall": "npm install express"
+  }
+}
