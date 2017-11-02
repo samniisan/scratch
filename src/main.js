@@ -8,7 +8,8 @@ import Kuzzle from 'kuzzle-sdk'
 import { SET_CURRENT_USER } from './vuex/modules/auth/mutation-types'
 import { Picker, Emoji } from 'emoji-mart-vue'
 
-window.kuzzle = new Kuzzle('10.34.50.59')
+// window.kuzzle = new Kuzzle('10.34.50.59')
+window.kuzzle = new Kuzzle('10.35.250.18')
 
 router.beforeEach((to, from, next) => {
   if (to.matched.some(record => record.meta.auth)) {

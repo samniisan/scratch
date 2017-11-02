@@ -230,7 +230,7 @@
                                     xs4
                                     v-for="g in giphies"
                                     :key="g">
-                                    <v-card flat tile>
+                                    <v-card flat tile @click.native="message = g; showGiphyDialog = false;" style="cursor: pointer;">
                                         <v-card-media
                                             :src="g"
                                             height="150px">
@@ -455,19 +455,8 @@
 
               return
             }
-            if (message.content.channel.substring(0, 1) === '#') {
-              this.$store.state.channels.channels.forEach(channel => {
-                if (channel.id === message.content.channel) {
-                  this.$store.dispatch('INCREMENT_UNREAD', channel)
-                }
-              })
-            } else {
-              this.$store.state.channels.privateChannels.forEach(channel => {
-                if (channel.id === message.content.channel) {
-                  this.$store.dispatch('INCREMENT_UNREAD', channel)
-                }
-              })
-            }
+
+            this.$store.dispatch('INCREMENT_UNREAD', this.$store.getters.getChannelById(message.content.channel))
           }
         })
       },
